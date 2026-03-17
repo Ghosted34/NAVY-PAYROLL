@@ -33,12 +33,13 @@ app.use(
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'",
+        "https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js",
         "'unsafe-inline'",
         "https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"
       ],
       scriptSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],   // ← allows blob: images
-      frameSrc: ["'self'", "blob:"],           // ← allows blob: iframes
+      frameSrc: ["'self'", "blob:", "data:"],           // ← allows blob: iframes
     },
   })
 );
