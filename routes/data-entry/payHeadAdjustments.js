@@ -179,7 +179,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     const activeEmployeeSet = new Set(rows.map((r) => r.Empl_id));
 
     const filtered = cleaned.filter((row) =>
-      activeEmployeeSet.has(row.service_number?.trim()),
+     row.service_number && activeEmployeeSet.has(String(row.service_number)?.trim()),
     );
 
     const employeeMap = new Map(
@@ -259,7 +259,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
         if (ppr && !row.amount) {
           row.amount = ppr[`one_amount${row.level}`] || 0;
         }
-
+ const sourceSheet = row._sourceSheet||row._sourcesheet||"Sheet1"
         insertRecords.push({
           "SVC. No.": row.service_number,
           "Payment Type": row.bp,
@@ -267,7 +267,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
           "Payment Indicator": "T",
           Ternor: 1,
           "Pay Class": `${row.payclass}`,
-          _sourceSheet: row._sourceSheet || row._sourcesheet || "Sheet1",
+         _sourceSheet: `${sourceSheet}-${row.payclass}` 
         });
       }
 
@@ -584,19 +584,21 @@ router.get("/template", verifyToken, async (req, res) => {
   instructionsSheet.getRow(1).height = 25;
   instructionsSheet.getRow(2).height = 25;
 
-  const instructions = [
-    "1. Do not modify the header rows (rows 1-3) or column names",
-    "2. Fill data starting from row 4",
-    "3. Serial: Serial Number (e.g., 1)",
-    "4. Rank*: Valid Brief Rank (e.g., Lt, CDR, CAPT,  etc.)",
-    "5. Surname*: Surname Of Personnel",
-    "6. Other Names: Other Names of Personnel",
-    "7. Service Number*: Employee service number (e.g., NN001)",
-    "8. Ships: Name of ship/unit (e.g.,NNS KADA, NNS KANO, etc.)",
-    "9. Amount*: Numeric value (e.g., 5000.00)",
-    "10. Remarks: Further details if necessary",
-    "11. All Asterisked (*) fields are mandatory",
+   const instructions = [
+    "1. Make sure each sheet name matches the payhead code in the system for correct mapping",
+    "2. Do not modify the header rows (rows 1-3) or column names",
+    "3. Fill data starting from row 4",
+    "4. Serial: Serial Number (e.g., 1)",
+    "5. Rank*: Valid Brief Rank (e.g., Lt, CDR, CAPT,  etc.)",
+    "6. Surname*: Surname Of Personnel",
+    "7. Other Names: Other Names of Personnel",
+    "8. Service Number*: Employee service number (e.g., NN001)",
+    "9. Ships: Name of ship/unit (e.g.,NNS KADA, NNS KANO, etc.)",
+    "10. Amount*: Numeric value (e.g., 5000.00)",
+    "11. Remarks: Further details if necessary",
+    "12. All Asterisked (*) fields are mandatory",
   ];
+
 
   instructions.forEach((instruction, index) => {
     const cell = instructionsSheet.getCell(`A${index + 3}`);
@@ -605,7 +607,7 @@ router.get("/template", verifyToken, async (req, res) => {
     cell.alignment = { horizontal: "left", vertical: "middle" };
   });
 
-  instructionsSheet.getColumn("A").width = 70;
+  instructionsSheet.getColumn("A").width = 95;
 
   const buffer = await workbook.xlsx.writeBuffer();
 
