@@ -660,14 +660,9 @@ if errorlevel 1 (
 )
 
 echo.
-echo [TEST] curl https://%DOMAIN%/health
+echo [TEST] https://%DOMAIN%/health
 echo.
-curl -sk --max-time 8 https://%DOMAIN%/health
-if errorlevel 1 (
-    echo.
-    echo [WARN] curl failed - services may still be starting.
-    echo        Try manually: curl -k https://%DOMAIN%/health
-)
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'https://%DOMAIN%/health' -SkipCertificateCheck -TimeoutSec 8 -UseBasicParsing; Write-Host $r.Content } catch { Write-Host '[WARN] Health check failed - services may still be starting.' }" 
 
 
 :: ============================================================
