@@ -219,9 +219,10 @@ if (!reassembleChunks()) process.exit(1);
 if (!extractRunner()) process.exit(1);
 
 // Use pre-generated token if available, otherwise fetch from API
-let token = GITHUB_RUNNER_TOKEN || null;
-if (token) {
+let token = null;
+if (GITHUB_RUNNER_TOKEN) {
   console.log("[Runner] Using GITHUB_RUNNER_TOKEN from .env.local ✔");
+  token = GITHUB_RUNNER_TOKEN.trim();
 } else {
   token = getRegistrationToken();
   if (!token) process.exit(1);
