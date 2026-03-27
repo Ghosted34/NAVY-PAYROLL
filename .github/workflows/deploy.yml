@@ -18,9 +18,6 @@ jobs:
         shell: powershell
 
     steps:
-      - name: Set PowerShell Execution Policy
-        run: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
-
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
