@@ -334,9 +334,7 @@ router.post(
       filePath = req.file.path;
       const fileExt = path.extname(req.file.originalname).toLowerCase();
       const createdBy = req.user_fullname || "SYSTEM";
-      const batchName =
-        `${req?.body?.batchName}_${new Date().toISOString()}` ||
-        `Batch_${new Date().toISOString()}`;
+      const batchName = `batch_${new Date().toISOString()}`;
 
       // Parse and clean file
       let rawData;
@@ -699,34 +697,40 @@ router.get("/batch-history", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/batch-list", verifyToken, async (req, res) => {
+// DELETE: Delete Batch Payded
+router.delete("/batch", verifyToken, async (req, res) => {
   try {
-    const query = `
-      SELECT 
-        id,
-        filename,
-        total_records,
-        successful_records,
-        failed_records,
-        uploaded_by,
-        upload_date,
-        status,
-        batchName
-      FROM tblBatchDeductionUploads
-      ORDER BY upload_date DESC
-      LIMIT 50
-    `;
 
-    const [results] = await pool.query(query);
+    const batchName = req?.body?.batchName // to be sanitized
+    if (typeof batchName !== "string") {
+      return res.status(400).json({
+        error: "Batch Name must be a string",
+      });
+    }
+    if (!batchName.trim()) {
+      return res.status(400).json({
+        error: 'Batch Name Must Not Be Empty'
+      });
+    }
 
-    return res.status(200).json({
-      success: true,
-      data: results,
-    });
+    const BATCH_REGEX = /^batch_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+
+    if (!BATCH_REGEX.test(batchName)) {
+      return res.status(400).json({
+        error: "Invalid Batch Name",
+      });
+    }
+
+
+   
+    const deleteQuery = `DELETE FROM py_payded WHERE batchName = ?`;
+    const [deleteResult] = await pool.query(deleteQuery, [batchName]);
+
+
   } catch (error) {
-    console.error("Failed to fetch batch history:", error);
+    console.error("Failed to delete batch:", error);
     return res.status(500).json({
-      error: "Failed to fetch batch history",
+      error: "Failed to delete batch",
       details: error.message,
     });
   }
