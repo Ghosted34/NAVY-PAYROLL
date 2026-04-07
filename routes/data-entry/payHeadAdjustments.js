@@ -51,13 +51,20 @@ function normalize(row) {
   for (const key in row) {
     if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
 
-    const lowerKey = key.trim().toLowerCase().replace(/\s+/g, "_");
-    normalized[lowerKey] = row[key];
+    const normalizedKey = key
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "") // remove non-alphanumeric (keeps spaces)
+      .replace(/\s+/g, "_") // convert whitespace to _
+      .replace(/^_+|_+$/g, ""); // strip leading/trailing underscores
+
+    if (!normalizedKey) continue; // skip keys that became empty
+
+    normalized[normalizedKey] = row[key];
   }
 
   return normalized;
 }
-
 const PAYCLASS_MAPPING = {
   1: config.databases.officers,
   2: config.databases.wofficers,
@@ -186,30 +193,43 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     WHERE Empl_id IN (${cleaned.map(() => "?").join(",")})
     `;
 
-    const [rows] = await pool.query(query, cleaned.map((r) => String(r.service_number)?.trim()));
+    const [rows] = await pool.query(
+      query,
+      cleaned.map((r) => String(r.service_number)?.trim()),
+    );
 
     const activeEmployeeSet = new Set(
       rows
-        .filter((r) => !Boolean(r.DateLeft?.trim()) && !Boolean(r.exittype?.trim()))
-        .map((r) => r.Empl_id?.trim().toLowerCase()),);
+        .filter(
+          (r) => !Boolean(r.DateLeft?.trim()) && !Boolean(r.exittype?.trim()),
+        )
+        .map((r) => r.Empl_id?.trim().toLowerCase()),
+    );
 
     const inactiveEmployeeSet = new Set(
       rows
-        .filter((r) => Boolean(r.DateLeft?.trim()) || Boolean(r.exittype?.trim()))
+        .filter(
+          (r) => Boolean(r.DateLeft?.trim()) || Boolean(r.exittype?.trim()),
+        )
         .map((r) => r.Empl_id?.trim().toLowerCase()),
     );
 
     const nonExistentSet = new Set(
       cleaned
-        .filter((r) => r.service_number &&
-          !activeEmployeeSet.has(String(r.service_number).trim().toLowerCase()) &&
-          !inactiveEmployeeSet.has(String(r.service_number).trim().toLowerCase()))
-        .map((r) => String(r.service_number).trim().toLowerCase())
+        .filter(
+          (r) =>
+            r.service_number &&
+            !activeEmployeeSet.has(
+              String(r.service_number).trim().toLowerCase(),
+            ) &&
+            !inactiveEmployeeSet.has(
+              String(r.service_number).trim().toLowerCase(),
+            ),
+        )
+        .map((r) => String(r.service_number).trim().toLowerCase()),
     );
 
-
-
-     const filtered = cleaned.filter((row) => {
+    const filtered = cleaned.filter((row) => {
       return (
         row.service_number &&
         activeEmployeeSet.has(String(row.service_number)?.trim().toLowerCase())
@@ -218,12 +238,17 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     const inactiveFiltered = cleaned.filter((row) => {
       return (
         row.service_number &&
-        inactiveEmployeeSet.has(String(row.service_number)?.trim().toLowerCase())
+        inactiveEmployeeSet.has(
+          String(row.service_number)?.trim().toLowerCase(),
+        )
       );
     });
 
-
-    const nonExistentFiltered = cleaned.filter(r => r.service_number && nonExistentSet.has(String(r.service_number)?.trim().toLowerCase()))
+    const nonExistentFiltered = cleaned.filter(
+      (r) =>
+        r.service_number &&
+        nonExistentSet.has(String(r.service_number)?.trim().toLowerCase()),
+    );
 
     const employeeMap = new Map(
       rows.map((e) => [
@@ -266,14 +291,15 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
       computed: 0,
       non_exist: nonExistentSet.size,
       duplicates: duplicates.length,
-    };;
+    };
 
     const insertRecords = [];
 
-    console.log(payclassMap.entries())
+    console.log(payclassMap.entries());
     for (const [payclass, rows] of payclassMap.entries()) {
-
-      console.log(`Processing active payclass ${payclass} with ${rows.length} records`);
+      console.log(
+        `Processing active payclass ${payclass} with ${rows.length} records`,
+      );
       const db = PAYCLASS_MAPPING[payclass];
       if (!db) {
         console.warn(`No database mapping for payclass ${payclass}, skipping`);
@@ -317,7 +343,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
         if (ppr && !row.amount) {
           row.amount = ppr[`one_amount${row.level}`] || 0;
         }
-        const sourceSheet = row._sourceSheet || row._sourcesheet || "Sheet1"
+        const sourceSheet = row._sourceSheet || row._sourcesheet || "Sheet1";
         insertRecords.push({
           "SVC. No.": row.service_number,
           "Payment Type": row.bp,
@@ -325,7 +351,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
           "Payment Indicator": "T",
           Ternor: 1,
           "Pay Class": `${row.payclass}`,
-          _sourceSheet: `${sourceSheet}-${row.payclass}`
+          _sourceSheet: `${sourceSheet}-${row.payclass}`,
         });
       }
 
@@ -336,7 +362,7 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
       }
     }
 
-      // Inactive employees go to a separate sheet with minimal info
+    // Inactive employees go to a separate sheet with minimal info
     for (const row of inactiveFiltered) {
       const sourceSheet = row._sourceSheet || row._sourcesheet || "Sheet1";
       insertRecords.push({
@@ -352,10 +378,10 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
     for (const row of nonExistentFiltered) {
       insertRecords.push({
         "SVC. No.": row.service_number,
-        "Rank": row.rank || "N/A",
-        "Surname": row.surname || "N/A",
+        Rank: row.rank || "N/A",
+        Surname: row.surname || "N/A",
         "Other Names": row.other_names || "N/A",
-        "Amount": row.amount || "N/A",
+        Amount: row.amount || "N/A",
         _sourceSheet: `NONEXISTENT`,
       });
     }
@@ -471,7 +497,11 @@ router.post("/", verifyToken, upload.single("file"), async (req, res) => {
           const cell = row.getCell(colIndex + 1);
           cell.value = record[header];
 
-        if (header === "Amount Payable" || header === "Amount To Date" || header === "Amount") {
+          if (
+            header === "Amount Payable" ||
+            header === "Amount To Date" ||
+            header === "Amount"
+          ) {
             cell.numFmt = '"₦"#,##0.00';
             cell.alignment = { horizontal: "right", vertical: "middle" };
           }
@@ -682,7 +712,6 @@ router.get("/template", verifyToken, async (req, res) => {
     "11. Remarks: Further details if necessary",
     "12. All Asterisked (*) fields are mandatory",
   ];
-
 
   instructions.forEach((instruction, index) => {
     const cell = instructionsSheet.getCell(`A${index + 3}`);
