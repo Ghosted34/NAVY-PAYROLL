@@ -9,8 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const pool = require("../../config/db"); // mysql2 pool
 const verifyToken = require("../../middware/authentication");
-const config = require("../../config");
-
+const { parseCSVFile, deduplicate, normalize, generateBatchName, parseBatchName } = require("../../utils/excel_helper");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -53,15 +52,6 @@ const FIELD_MAPPING = {
   ternor: "nomth",
 };
 
-const PAYCLASS_MAPPING = {
-  1: config.databases.officers,
-  2: config.databases.wofficers,
-  3: config.databases.ratings,
-  4: config.databases.ratingsA,
-  5: config.databases.ratingsB,
-  6: config.databases.juniorTrainee,
-};
-
 // Helper function to parse Excel file
 function parseExcelFile(filePath) {
   const workbook = XLSX.readFile(filePath);
@@ -93,7 +83,6 @@ function parseExcelFile(filePath) {
     if (!validHeaders || validHeaders.length === 0) {
       throw new Error(`No headers found in row 4 of sheet "${sheetName}"`);
     }
-    console.log("📋 Detected headers:", headers);
 
     // Rows 5+ (index 4+) contain the actual data
     const dataRows = sheetData.slice(4);
@@ -130,7 +119,6 @@ function parseExcelFile(filePath) {
         return obj;
       });
 
-    console.log("✅ Parsed data rows:", data.length);
 
     allData.push(...data);
   }
@@ -138,76 +126,6 @@ function parseExcelFile(filePath) {
   return allData;
 }
 
-// Helper function to parse CSV file
-function parseCSVFile(filePath) {
-  return new Promise((resolve, reject) => {
-    const results = [];
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => results.push(data))
-      .on("end", () => resolve(results))
-      .on("error", (error) => reject(error));
-  });
-}
-
-function rowSignature(row) {
-  const sortedKeys = Object.keys(row).sort();
-  const normalized = {};
-
-  for (const key of sortedKeys) {
-    const value = row[key];
-    normalized[key] = typeof value === "string" ? value.trim() : value;
-  }
-
-  return JSON.stringify(normalized);
-}
-
-function deduplicate(rows) {
-  const seen = new Set();
-  const cleaned = [];
-  const duplicates = [];
-
-  for (const row of rows) {
-    const sig = rowSignature(row);
-    if (!seen.has(sig)) {
-      seen.add(sig);
-      cleaned.push(row);
-    } else {
-      duplicates.push(row);
-    }
-  }
-
-  return { cleaned, duplicates };
-}
-
-function normalize(row) {
-  const normalized = {};
-
-  for (const key in row) {
-    if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
-
-    const normalizedKey = key
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "") // remove non-alphanumeric (keeps spaces for now)
-      .replace(/\s+/g, "_") // convert whitespace to _
-      .replace(/^_+|_+$/g, ""); // strip leading/trailing underscores
-
-    if (!normalizedKey) continue; // skip keys that became empty
-
-    normalized[normalizedKey] = row[key];
-  }
-
-  return normalized;
-}
-
-function normalizeDate(dateStr) {
-  if (!dateStr || dateStr.trim() === "" || dateStr.trim().length !== 8)
-    return null;
-  const s = dateStr.trim();
-  // expects yyyymmdd
-  return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
-}
 
 // Helper function to map fields
 function mapFields(row, defaultCreatedBy) {
@@ -297,8 +215,8 @@ async function checkDuplicates(deductions) {
 async function insertDeduction(data) {
   const query = `
     INSERT INTO py_payded (
-      Empl_id, type, mak1, amtp, mak2, amt, amttd, payind, nomth, createdby, datecreated
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      Empl_id, type, mak1, amtp, mak2, amt, amttd, payind, nomth, createdby, datecreated, batchName
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
   `;
 
   const [result] = await pool.query(query, [
@@ -312,6 +230,7 @@ async function insertDeduction(data) {
     data.payind,
     data.nomth,
     data.createdby,
+    data.batchName || null,
   ]);
 
   return result;
@@ -332,7 +251,11 @@ router.post(
       filePath = req.file.path;
       const fileExt = path.extname(req.file.originalname).toLowerCase();
       const createdBy = req.user_fullname || "SYSTEM";
-      const batchName = `batch_${new Date().toISOString()}`;
+
+      const originalBatchame = req?.body?.batchName?.trim() || "";
+      const hasBatchName = !!originalBatchame;
+      const batchName = generateBatchName(hasBatchName ? originalBatchame : "batch");
+
 
       // Parse and clean file
       let rawData;
@@ -348,9 +271,6 @@ router.post(
       rawData = rawData?.filter((row) => Object.keys(row).length > 0);
 
       const { cleaned, duplicates } = deduplicate(rawData);
-
-      console.log("📄 First row of parsed cleaned data:", cleaned[0]);
-      console.log("📊 Total rows parsed:", cleaned.length);
 
       // THEN SET DATABASE CONTEXT
       const currentDb = pool.getCurrentDatabase(req.user_id.toString());
@@ -396,6 +316,7 @@ router.post(
       // Insert only unique deductions
       for (let i = 0; i < uniqueData.length; i++) {
         try {
+          console.log(batchName)
           uniqueData[i].batchName = batchName;
           await insertDeduction(uniqueData[i]);
           results.successful++;
@@ -433,7 +354,7 @@ router.post(
 
       return res.status(200).json({
         message: "Batch payment and deduction upload completed",
-        summary: { ...results, batchName: results.successful > 0 ? batchName : undefined }, // show batchName only when successful > 0
+        summary: { ...results, batchName: results.successful > 0 ? batchName : undefined },
       });
     } catch (error) {
       console.error("Batch payment and deduction upload error:", error);
@@ -662,31 +583,160 @@ router.get("/batch-template", verifyToken, async (req, res) => {
 });
 
 // GET: Batch upload history
-router.get("/batch-list", verifyToken, async (req, res) => {
+router.get("/list-batch", verifyToken, async (req, res) => {
   try {
+    const page = Number(req.query?.page) || 1;
+    const limit = Number(req.query?.limit) || 10;
+    const offset = (page - 1) * limit;
+
     const query = `
-     SELECT batchName,
-
-      GROUP_CONCAT(
-        DISTINCT LOWER(TRIM(createdby))
-        ORDER BY LOWER(TRIM(createdby))
-        SEPARATOR ', '
-      ) AS createdByList,
-
-      MAX(datecreated) AS latestDateCreated
-
-    FROM py_payded
-
-    GROUP BY batchName
-
-    ORDER BY latestDateCreated DESC;
+      SELECT batchName,
+        GROUP_CONCAT(
+          DISTINCT LOWER(TRIM(createdby))
+          ORDER BY LOWER(TRIM(createdby))
+          SEPARATOR ', '
+        ) AS createdByList,
+        MAX(datecreated) AS latestDateCreated
+      FROM py_payded
+      WHERE batchName IS NOT NULL
+        AND TRIM(batchName) <> ''
+      GROUP BY batchName
+      ORDER BY latestDateCreated DESC
+      LIMIT ? OFFSET ?;
     `;
-    const [results] = await pool.query(query);
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM (
+        SELECT batchName
+        FROM py_payded
+        WHERE batchName IS NOT NULL
+          AND TRIM(batchName) <> ''
+        GROUP BY batchName
+      ) AS grouped;
+    `;
+
+    const [[batches], [countResults]] = await Promise.all([
+      pool.query(query, [limit, offset]),
+      pool.query(countQuery),
+    ]);
+
+    const totalRecords = countResults[0].total;
+    const totalPages = Math.ceil(totalRecords / limit);
+    const results = batches.map((batch) => {
+
+      const res = parseBatchName(batch.batchName);
+
+      return {
+        batchName: res.batch,
+        uploadedBy: batch.createdByList,
+        createdAt: res.date,
+        batchOriginal: batch.batchName
+      }
+
+    });
 
     return res.status(200).json({
       success: true,
       data: results,
+      pagination: {
+        currentPage: page,
+        recordsPerPage: limit,
+        totalRecords,
+        totalPages
+      }
     });
+
+  } catch (error) {
+    console.error("Failed to fetch batch history:", error);
+    return res.status(500).json({
+      error: "Failed to fetch batch history",
+      details: error.message,
+    });
+  }
+});
+
+
+// GET: Records with Batch Name
+router.get("/batch-list", verifyToken, async (req, res) => {
+  try {
+
+    const batchName = req?.body?.batchName // to be sanitized
+    if (typeof batchName !== "string") {
+      return res.status(400).json({
+        error: "Batch Name must be a string",
+      });
+    }
+    if (!batchName.trim()) {
+      return res.status(400).json({
+        error: 'Batch Name Must Not Be Empty'
+      });
+    }
+
+    const BATCH_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{2,3})?Z$/;
+
+    if (!BATCH_REGEX.test(batchName.trim())) {
+      return res.status(400).json({
+        error: "Invalid Batch Name",
+      });
+    }
+
+    const page = Number(req.query?.page) || 1;
+    const limit = Number(req.query?.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const query = `
+      SELECT 
+        p.Empl_id,
+        p.type,
+        p.amtp AS amount_payable,
+        p.payind AS indicator,
+        p.nomth AS months_remaining,
+        pi.inddesc AS ind_desc,
+      FROM py_payded p
+      LEFT JOIN py_payind pi 
+        ON p.payind = pi.ind
+      ORDER BY p.Empl_id, p.type
+      WHERE batchName = ?
+      LIMIT ? OFFSET ?;
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM py_payded
+      WHERE batchName = ?;
+    `;
+
+    const [[batches], [countResults]] = await Promise.all([
+      pool.query(query, [batchName.trim(), limit, offset]),
+      pool.query(countQuery, [batchName.trim()]),
+    ]);
+
+    const totalRecords = countResults[0].total;
+    const totalPages = Math.ceil(totalRecords / limit);
+    const results = batches.map((batch) => {
+
+      return {
+        id: batch.Empl_id,
+        type: batch.type,
+        amount_payable: Number(batch.amount_payable) || 0,
+        months_remaining: batch.months_remaining,
+        indicator: batch.ind_desc,
+      }
+
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: results,
+      pagination: {
+        currentPage: page,
+        recordsPerPage: limit,
+        totalRecords,
+        totalPages
+      }
+    });
+
   } catch (error) {
     console.error("Failed to fetch batch history:", error);
     return res.status(500).json({
@@ -712,7 +762,7 @@ router.delete("/batch-delete", verifyToken, async (req, res) => {
       });
     }
 
-    const BATCH_REGEX = /^batch_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+    const BATCH_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{2,3})?Z$/;
 
     if (!BATCH_REGEX.test(batchName)) {
       return res.status(400).json({

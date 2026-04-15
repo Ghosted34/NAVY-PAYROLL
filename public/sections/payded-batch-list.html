@@ -50,9 +50,24 @@
           </svg>
         </button>
       </div>
-      <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        <i class="fas fa-sync-alt mr-2"></i>Refresh
-      </button>
+
+    </div>
+  </div>
+
+    <!-- Batch List Modal -->
+  <div id="batchList" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <h2 class="text-xl font-bold text-blue-600">Batch Records</h2>
+        <button id="closeListBtn" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="batchContent" class="space-y-4">
+        <!-- Batch records will be loaded here -->
+      </div>
     </div>
   </div>
 
@@ -94,6 +109,7 @@
           <th class="border px-4 py-2 text-left">Batch Name</th>
           <th class="border px-4 py-2 text-left">Date Uploaded</th>
           <th class="border px-4 py-2 text-left">Uploaded By</th>
+          <th class="border px-4 py-2 text-left"></th>
         </tr>
       </thead>
       <tbody id="tableBody" class="text-sm">
@@ -131,7 +147,7 @@
   const auth = window.authService;
   (function () {
     // Configuration
-    const API_ENDPOINT = 'batchpayded; // Change this to your actual endpoint
+    const API_ENDPOINT = 'batchpayded'; // Change this to your actual endpoint
     
     // DOM Elements
     const tableBody = document.getElementById("tableBody");
@@ -139,7 +155,6 @@
     const errorModal = document.getElementById("errorModal");
     const errorMessage = document.getElementById("errorMessage");
     const closeErrorBtn = document.getElementById("closeErrorBtn");
-    const refreshBtn = document.getElementById("refreshBtn");
     const tableSearchInput = document.getElementById('tableSearchInput');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
 
@@ -212,7 +227,7 @@
         showLoading();
         const token = localStorage.getItem('token');
 
-        let url = `${API_ENDPOINT}/?page=${currentPage}&limit=${recordsPerPage}`;
+        let url = `${API_ENDPOINT}/list-batch/?page=${currentPage}&limit=${recordsPerPage}`;
 
         if (currentSearchQuery) {
           url += `&search=${encodeURIComponent(currentSearchQuery)}`;
@@ -246,6 +261,74 @@
       }
     }
 
+    window.deleteBatch = async function (batchName) {
+      if (!confirm(`Are you sure you want to delete this batch? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        showLoading();
+        const token = localStorage.getItem('token');
+
+        const response = await auth.fetchWithAuth(`${API_ENDPOINT}/batch-delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ batchName })
+        });
+
+        const result = await response.json();
+        hideLoading();
+
+        if (result.success) {
+          alert(result.message || 'Batch deleted successfully');
+          fetchBatchHistory(); // Refresh the table after deletion
+        } else {
+          showError(result.message || 'Failed to delete batch');
+        }
+      } catch (error) {
+        hideLoading();
+        console.error('Error deleting batch:', error);
+        showError('Error deleting batch. Please try again.');
+      }
+
+    }
+
+    window.viewBatch = async function (batchName) {
+
+      try {
+        showLoading();
+        const token = localStorage.getItem('token');
+
+        const response = await auth.fetchWithAuth(`${API_ENDPOINT}/batch-delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ batchName })
+        });
+
+        const result = await response.json();
+        hideLoading();
+
+        if (result.success) {
+          alert(result.message || 'Batch deleted successfully');
+          fetchBatchHistory(); // Refresh the table after deletion
+        } else {
+          showError(result.message || 'Failed to delete batch');
+        }
+      } catch (error) {
+        hideLoading();
+        console.error('Error deleting batch:', error);
+        showError('Error deleting batch. Please try again.');
+      }
+
+    }
+
+
     // Render table with data
     function renderTable(data) {
       tableBody.innerHTML = '';
@@ -266,6 +349,10 @@
           <td class="py-3 px-4 border">${item.batch_name || item.batchName || 'N/A'}</td>
           <td class="py-3 px-4 border">${formatDate(item.date_uploaded || item.dateUploaded || item.created_at || item.createdAt)}</td>
           <td class="py-3 px-4 border">${formatUploader(item.uploaded_by || item.uploadedBy || item.uploader)}</td>
+          <td class="py-3 px-4 border flex items-center justify-between gap-2">
+            <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick="window.viewBatch('${item.batchOriginal}')">View</button>
+            <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" onClick="window.deleteBatch('${item.batchOriginal}')">Delete</button>
+            </td>
         `;
         tableBody.appendChild(row);
       });
@@ -314,12 +401,7 @@
       errorModal.classList.add("hidden");
     });
 
-    refreshBtn.addEventListener("click", () => {
-      currentPage = 1;
-      currentSearchQuery = '';
-      tableSearchInput.value = '';
-      fetchBatchHistory();
-    });
+
 
     prevPageBtn.addEventListener('click', () => {
       if (currentPage > 1) {
