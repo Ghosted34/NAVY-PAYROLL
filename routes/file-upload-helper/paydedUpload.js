@@ -9,7 +9,13 @@ const fs = require("fs");
 const path = require("path");
 const pool = require("../../config/db"); // mysql2 pool
 const verifyToken = require("../../middware/authentication");
-const { parseCSVFile, deduplicate, normalize, generateBatchName, parseBatchName } = require("../../utils/excel_helper");
+const {
+  parseCSVFile,
+  deduplicate,
+  normalize,
+  generateBatchName,
+  parseBatchName,
+} = require("../../utils/excel_helper");
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -119,13 +125,11 @@ function parseExcelFile(filePath) {
         return obj;
       });
 
-
     allData.push(...data);
   }
 
   return allData;
 }
-
 
 // Helper function to map fields
 function mapFields(row, defaultCreatedBy) {
@@ -254,8 +258,9 @@ router.post(
 
       const originalBatchame = req?.body?.batchName?.trim() || "";
       const hasBatchName = !!originalBatchame;
-      const batchName = generateBatchName(hasBatchName ? originalBatchame : "batch");
-
+      const batchName = generateBatchName(
+        hasBatchName ? originalBatchame : "batch",
+      );
 
       // Parse and clean file
       let rawData;
@@ -316,7 +321,7 @@ router.post(
       // Insert only unique deductions
       for (let i = 0; i < uniqueData.length; i++) {
         try {
-          console.log(batchName)
+          console.log(batchName);
           uniqueData[i].batchName = batchName;
           await insertDeduction(uniqueData[i]);
           results.successful++;
@@ -354,7 +359,10 @@ router.post(
 
       return res.status(200).json({
         message: "Batch payment and deduction upload completed",
-        summary: { ...results, batchName: results.successful > 0 ? batchName : undefined },
+        summary: {
+          ...results,
+          batchName: results.successful > 0 ? batchName : undefined,
+        },
       });
     } catch (error) {
       console.error("Batch payment and deduction upload error:", error);
@@ -624,16 +632,14 @@ router.get("/list-batch", verifyToken, async (req, res) => {
     const totalRecords = countResults[0].total;
     const totalPages = Math.ceil(totalRecords / limit);
     const results = batches.map((batch) => {
-
       const res = parseBatchName(batch.batchName);
 
       return {
         batchName: res.batch,
         uploadedBy: batch.createdByList,
         createdAt: res.date,
-        batchOriginal: batch.batchName
-      }
-
+        batchOriginal: batch.batchName,
+      };
     });
 
     return res.status(200).json({
@@ -643,10 +649,9 @@ router.get("/list-batch", verifyToken, async (req, res) => {
         currentPage: page,
         recordsPerPage: limit,
         totalRecords,
-        totalPages
-      }
+        totalPages,
+      },
     });
-
   } catch (error) {
     console.error("Failed to fetch batch history:", error);
     return res.status(500).json({
@@ -656,12 +661,10 @@ router.get("/list-batch", verifyToken, async (req, res) => {
   }
 });
 
-
 // GET: Records with Batch Name
-router.get("/batch-list", verifyToken, async (req, res) => {
+router.get("/batch-list/:batchName", verifyToken, async (req, res) => {
   try {
-
-    const batchName = req?.body?.batchName // to be sanitized
+    const batchName = req?.params?.batchName; // to be sanitized
     if (typeof batchName !== "string") {
       return res.status(400).json({
         error: "Batch Name must be a string",
@@ -669,7 +672,7 @@ router.get("/batch-list", verifyToken, async (req, res) => {
     }
     if (!batchName.trim()) {
       return res.status(400).json({
-        error: 'Batch Name Must Not Be Empty'
+        error: "Batch Name Must Not Be Empty",
       });
     }
 
@@ -692,12 +695,12 @@ router.get("/batch-list", verifyToken, async (req, res) => {
         p.amtp AS amount_payable,
         p.payind AS indicator,
         p.nomth AS months_remaining,
-        pi.inddesc AS ind_desc,
+        pi.inddesc AS ind_desc
       FROM py_payded p
       LEFT JOIN py_payind pi 
         ON p.payind = pi.ind
-      ORDER BY p.Empl_id, p.type
       WHERE batchName = ?
+      ORDER BY p.Empl_id, p.type
       LIMIT ? OFFSET ?;
     `;
 
@@ -715,15 +718,13 @@ router.get("/batch-list", verifyToken, async (req, res) => {
     const totalRecords = countResults[0].total;
     const totalPages = Math.ceil(totalRecords / limit);
     const results = batches.map((batch) => {
-
       return {
         id: batch.Empl_id,
         type: batch.type,
         amount_payable: Number(batch.amount_payable) || 0,
         months_remaining: batch.months_remaining,
         indicator: batch.ind_desc,
-      }
-
+      };
     });
 
     return res.status(200).json({
@@ -733,10 +734,9 @@ router.get("/batch-list", verifyToken, async (req, res) => {
         currentPage: page,
         recordsPerPage: limit,
         totalRecords,
-        totalPages
-      }
+        totalPages,
+      },
     });
-
   } catch (error) {
     console.error("Failed to fetch batch history:", error);
     return res.status(500).json({
@@ -749,8 +749,7 @@ router.get("/batch-list", verifyToken, async (req, res) => {
 // DELETE: Delete Batch Payded
 router.delete("/batch-delete", verifyToken, async (req, res) => {
   try {
-
-    const batchName = req?.body?.batchName // to be sanitized
+    const batchName = req?.body?.batchName; // to be sanitized
     if (typeof batchName !== "string") {
       return res.status(400).json({
         error: "Batch Name must be a string",
@@ -758,7 +757,7 @@ router.delete("/batch-delete", verifyToken, async (req, res) => {
     }
     if (!batchName.trim()) {
       return res.status(400).json({
-        error: 'Batch Name Must Not Be Empty'
+        error: "Batch Name Must Not Be Empty",
       });
     }
 
@@ -770,8 +769,6 @@ router.delete("/batch-delete", verifyToken, async (req, res) => {
       });
     }
 
-
-
     const deleteQuery = `DELETE FROM py_payded WHERE batchName = ?`;
     await pool.query(deleteQuery, [batchName]);
 
@@ -779,7 +776,6 @@ router.delete("/batch-delete", verifyToken, async (req, res) => {
       success: true,
       message: `Batch "${batchName}" deleted successfully`,
     });
-
   } catch (error) {
     console.error("Failed to delete batch:", error);
     return res.status(500).json({
