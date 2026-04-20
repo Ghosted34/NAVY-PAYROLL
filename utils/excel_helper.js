@@ -65,28 +65,13 @@ export function parseCSVFile(filePath) {
   });
 }
 
-const ISO_DATE_SEGMENT_RE =
-  /(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?Z?)?|\d{8})/;
 
-export function parseBatchName(batchName) {
-    const match = ISO_DATE_SEGMENT_RE.exec(batchName);
-    if (!match) return null;
-
-    let segment = match[1];
-
-    // Expand compact YYYYMMDD → YYYY-MM-DD
-    if (/^\d{8}$/.test(segment)) {
-        segment = `${segment.slice(0, 4)}-${segment.slice(4, 6)}-${segment.slice(6, 8)}`;
-    }
-    const batch = batchName.replace(ISO_DATE_SEGMENT_RE, '').replace(/_+$/, '') || 'batch';
-
-
-    const d = new Date(segment);
-    return isNaN(d.getTime()) ? null : {date:d.toISOString(), batch};
-}
-
-export function generateBatchName(prefix = 'batch') {
-    const iso = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const safePrefix = prefix.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-    return `${safePrefix}_${iso}`;
+export function generateBatchName(prefix = 'batch', createdBy = 'SYSTEM') {
+  const iso = new Date().toLocaleDateString('en-NG', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).split('/').reverse().join('-');
+  const safePrefix = prefix.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `${safePrefix}_${createdBy}_${iso}`;
 }
