@@ -25,7 +25,7 @@
 
 The Nigerian Navy Payroll Management System is a centralised, database-driven platform that automates the complete payroll lifecycle — from personnel onboarding through monthly processing, report generation, and bank payment file export. It supports multiple payroll classes (Officers, Warrant Officers, Senior NCOs, Ratings, Civilians) each backed by its own database, with a unified frontend SPA for all user roles.
 
-Designed for up to **50 concurrent operators** with room to scale. Currently deployed on cPanel shared hosting with PM2 cluster mode (4 instances).
+Designed for up to **250 concurrent operators** with room to scale. Test system currently deployed on cPanel shared hosting with PM2 cluster mode (4 instances). Full deployment on Local Server.
 
 ---
 
@@ -40,7 +40,8 @@ Designed for up to **50 concurrent operators** with room to scale. Currently dep
 | PDF Generation | Puppeteer / Chromium + jsreport fallback |
 | Frontend | Vanilla JS SPA — Over 84 dynamically loaded HTML sections |
 | Styling | Tailwind CSS v3 (self-hosted static build, 56KB) ||
-| Hosting | Local server (Windows) | Shelll Scripts |
+| Hosting | Local server (Windows) | 
+| Hosting Setup | Shelll Script |
 
 ---
 
@@ -246,7 +247,7 @@ npm run migrate:status # Show migration status
    git clone https://github.com/hicadsystems/NAVY-PAYROLL.git
    ```
    
-2. Create a Projects folder in C:/ and extract into it.
+2. Create a Projects folder in `C:/` and extract into it.
 
 3. using powershell: 
    ```bash
@@ -332,7 +333,7 @@ Issues to address as the system and dataset grow:
 |---|---|---|---|
 | 🔴 High | **Puppeteer PDF generation** | Each PDF request spawns a full Chromium instance — unbounded concurrency will exhaust RAM | Implement a PDF queue with max 3–4 concurrent Chromium instances |
 | 🟡 Medium | **Heavy report queries** | Some report endpoints fetch entire datasets without pagination | Add server-side pagination and date range limits to large queries |
-| 🟠 Monitor | **MySQL connection pool** |Each db connection instance has its own pool — simultaneous saturation possible under heavy load| | Cap `connectionLimit: 10` per instance in `db.js` |
+| 🟠 Monitor | **MySQL connection pool** |Each db connection instance has its own pool — simultaneous saturation possible under heavy load | Cap `connectionLimit: 10` per instance in `db.js` |
 | 🟢 Future | **MySQL read replica** | Report queries compete with write operations on the same DB instance | Route report queries to a read replica |
 
 ---
