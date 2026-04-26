@@ -1,3 +1,6 @@
+-- UP
+-- Add your schema changes here
+
 -- =============================================================
 -- EMOLUMENT SYSTEM — PHASE 1
 -- FILE: 02_new_tables.sql

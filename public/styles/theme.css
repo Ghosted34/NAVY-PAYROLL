@@ -1,0 +1,467 @@
+/**
+ * THEME SYSTEM - CSS Variables
+ * Supports Light and Dark modes
+ * Apply to html[data-theme="light"] or html[data-theme="dark"]
+ * Mobile-first responsive breakpoints included
+ */
+
+:root {
+  /* ────── LIGHT THEME (DEFAULT) ────── */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f5f1;
+  --bg-tertiary: #f0ede7;
+  --bg-accent: #f9f3e6;
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-tertiary: #7a7a7a;
+  --text-inverse: #ffffff;
+
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+
+  --color-navy: #1e40af;
+  --color-navy-light: #3b82f6;
+  --color-navy-dark: #1e3a8a;
+
+  --color-warning: #f6b409;
+  --color-warning-light: #fcd34d;
+  --color-warning-dark: #d97706;
+
+  --color-success: #047014;
+  --color-success-light: #10b981;
+  --color-success-dark: #059669;
+
+  --color-error: #dc2626;
+  --color-error-light: #ef4444;
+  --color-error-dark: #b91c1c;
+
+  --color-info: #0284c7;
+  --color-info-light: #0ea5e9;
+  --color-info-dark: #0c4a6e;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 5px 0 rgba(0, 0, 0, 0.08);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-smooth: 500ms ease;
+}
+
+/* ────── DARK THEME ────── */
+html[data-theme="dark"] {
+  --bg-primary: #0d1f35;
+  --bg-secondary: #1a2b42;
+  --bg-tertiary: #253551;
+  --bg-accent: #1e3a5f;
+
+  --text-primary: #e8f0fe;
+  --text-secondary: #b8c9e0;
+  --text-tertiary: #8899b8;
+  --text-inverse: #0d1f35;
+
+  --border-primary: #3a4f66;
+  --border-secondary: #4a6280;
+
+  --color-navy: #60a5fa;
+  --color-navy-light: #93c5fd;
+  --color-navy-dark: #3b82f6;
+
+  --color-warning: #fbbf24;
+  --color-warning-light: #fcd34d;
+  --color-warning-dark: #f59e0b;
+
+  --color-success: #34d399;
+  --color-success-light: #6ee7b7;
+  --color-success-dark: #10b981;
+
+  --color-error: #f87171;
+  --color-error-light: #fca5a5;
+  --color-error-dark: #ef4444;
+
+  --color-info: #38bdf8;
+  --color-info-light: #7dd3fc;
+  --color-info-dark: #0ea5e9;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 5px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* ────── APPLY THEME TO HTML & BODY ────── */
+html {
+  color-scheme: light;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* ────── HEADER THEMING ────── */
+header {
+  background-color: var(--bg-primary);
+  border-bottom-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+header .text-navy {
+  color: var(--color-navy);
+}
+
+/* ────── SIDEBAR THEMING ────── */
+#sidebar {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+#sidebar nav {
+  background-color: var(--bg-secondary);
+}
+
+.nav-item {
+  color: var(--color-navy);
+  transition: background-color var(--transition-fast);
+}
+
+.nav-item:hover {
+  background-color: rgba(30, 64, 175, 0.1);
+}
+
+html[data-theme="dark"] .nav-item:hover {
+  background-color: rgba(96, 165, 250, 0.15);
+}
+
+.nav-item.active {
+  background-color: var(--color-navy);
+  color: var(--text-inverse);
+}
+
+.submenu {
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ────── MAIN CONTENT AREA ────── */
+main {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ────── CARDS & CONTAINERS ────── */
+.card,
+.section-container,
+section {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* ────── FORM ELEMENTS ────── */
+input,
+textarea,
+select {
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-navy);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+}
+
+/* ────── BUTTONS ────── */
+.btn-primary {
+  background-color: var(--color-navy);
+  color: var(--text-inverse);
+  border-color: var(--color-navy);
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-navy-dark);
+  border-color: var(--color-navy-dark);
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-primary);
+}
+
+.btn-success {
+  background-color: var(--color-success);
+  color: var(--text-inverse);
+}
+
+.btn-success:hover {
+  background-color: var(--color-success-dark);
+}
+
+.btn-warning {
+  background-color: var(--color-warning);
+  color: var(--text-inverse);
+}
+
+.btn-warning:hover {
+  background-color: var(--color-warning-dark);
+}
+
+.btn-error {
+  background-color: var(--color-error);
+  color: var(--text-inverse);
+}
+
+.btn-error:hover {
+  background-color: var(--color-error-dark);
+}
+
+/* ────── TABLES ────── */
+table {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+table th {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
+}
+
+table tbody tr {
+  border-color: var(--border-primary);
+  transition: background-color var(--transition-fast);
+}
+
+table tbody tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+table td {
+  border-color: var(--border-primary);
+}
+
+/* ────── MODALS & DIALOGS ────── */
+.modal,
+.dialog {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* ────── STATUS & STATE COLORS ────── */
+.status-success {
+  background-color: rgba(4, 112, 20, 0.1);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.status-warning {
+  background-color: rgba(246, 180, 9, 0.1);
+  color: var(--color-warning-dark);
+  border-color: var(--color-warning);
+}
+
+.status-error {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.status-info {
+  background-color: rgba(2, 132, 199, 0.1);
+  color: var(--color-info);
+  border-color: var(--color-info);
+}
+
+/* ────── BADGES ────── */
+.badge {
+  background-color: var(--color-navy);
+  color: var(--text-inverse);
+  border-color: var(--color-navy);
+}
+
+.badge-success {
+  background-color: var(--color-success);
+  color: var(--text-inverse);
+}
+
+.badge-warning {
+  background-color: var(--color-warning);
+  color: var(--text-inverse);
+}
+
+.badge-error {
+  background-color: var(--color-error);
+  color: var(--text-inverse);
+}
+
+/* ────── DIVIDERS & SEPARATORS ────── */
+hr,
+.divider {
+  border-color: var(--border-primary);
+}
+
+/* ────── TEXT UTILITIES ────── */
+.text-muted {
+  color: var(--text-tertiary);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.text-info {
+  color: var(--color-info);
+}
+
+/* ────── MOBILE-FIRST RESPONSIVE ADJUSTMENTS ────── */
+@media (max-width: 640px) {
+  /* Reduce header size on mobile */
+  header {
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Stack sidebar on mobile (full screen overlay) */
+  #sidebar {
+    width: 100%;
+    height: 100vh;
+  }
+
+  /* Smaller fonts on mobile */
+  h1 {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.25rem;
+  }
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  /* Reduce padding on mobile */
+  main,
+  section,
+  .section-container {
+    padding: 1rem;
+  }
+
+  /* Table responsive on mobile */
+  table {
+    font-size: 0.875rem;
+  }
+
+  table th,
+  table td {
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Tablet adjustments */
+  h1 {
+    font-size: 1.75rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  main,
+  section,
+  .section-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1025px) {
+  /* Desktop adjustments */
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.75rem;
+  }
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  main,
+  section,
+  .section-container {
+    padding: 2rem;
+  }
+}
+
+/* ────── ACCESSIBILITY ────── */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ────── PRINT STYLES ────── */
+@media print {
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f5f1;
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+  }
+
+  header,
+  #sidebar,
+  .no-print {
+    display: none;
+  }
+}

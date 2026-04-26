@@ -1,3 +1,6 @@
+-- UP
+-- Add your schema changes here
+
 -- =============================================================
 -- EMOLUMENT SYSTEM — PHASE 1
 -- FILE: 01_schema_remediation.sql
