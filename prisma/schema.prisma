@@ -1,0 +1,3109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model backup_configs {
+  id                 Int                           @id @default(autoincrement())
+  name               String                        @unique(map: "name") @db.VarChar(255)
+  database_name      String                        @db.VarChar(255)
+  backup_type        backup_configs_backup_type?   @default(full)
+  compression        Boolean?                      @default(true)
+  storage_type       backup_configs_storage_type?  @default(local)
+  schedule_type      backup_configs_schedule_type? @default(manual)
+  schedule_time      DateTime?                     @default(dbgenerated("'02:00:00'")) @db.Time(0)
+  schedule_enabled   Boolean?                      @default(true)
+  storage_config     String?                       @db.LongText
+  retention_days     Int?                          @default(30)
+  max_backups        Int?                          @default(10)
+  notification_email String?                       @db.VarChar(255)
+  created_at         DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?                     @default(now()) @db.Timestamp(0)
+  is_active          Boolean?                      @default(true)
+  backup_history     backup_history[]
+
+  @@index([database_name], map: "idx_database_name")
+  @@index([is_active], map: "idx_is_active")
+  @@index([schedule_type], map: "idx_schedule_type")
+}
+
+model backup_history {
+  id                  Int                    @id @default(autoincrement())
+  config_id           Int?
+  database_name       String                 @db.VarChar(255)
+  backup_type         String                 @db.VarChar(50)
+  file_name           String?                @db.VarChar(255)
+  file_path           String?                @db.VarChar(500)
+  file_size           BigInt?                @default(0)
+  compressed_size     BigInt?                @default(0)
+  status              backup_history_status? @default(pending)
+  progress_percentage Int?                   @default(0) @db.TinyInt
+  error_message       String?                @db.Text
+  started_at          DateTime?              @default(now()) @db.Timestamp(0)
+  completed_at        DateTime?              @db.Timestamp(0)
+  duration_seconds    Int?                   @default(0)
+  storage_location    String?                @db.VarChar(500)
+  storage_type        String?                @db.VarChar(50)
+  checksum            String?                @db.VarChar(64)
+  expires_at          DateTime?              @db.Timestamp(0)
+  backup_configs      backup_configs?        @relation(fields: [config_id], references: [id], onUpdate: NoAction, map: "backup_history_ibfk_1")
+
+  @@index([config_id], map: "idx_config_id")
+  @@index([database_name], map: "idx_database_name")
+  @@index([expires_at], map: "idx_expires_at")
+  @@index([started_at], map: "idx_started_at")
+  @@index([status], map: "idx_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model database_connections {
+  id                 Int                                     @id @default(autoincrement())
+  name               String                                  @unique(map: "name") @db.VarChar(255)
+  host               String                                  @db.VarChar(255)
+  port               Int?                                    @default(3306)
+  username           String                                  @db.VarChar(255)
+  password           String                                  @db.VarChar(255)
+  ssl_enabled        Boolean?                                @default(false)
+  ssl_config         String?                                 @db.LongText
+  test_connection_at DateTime?                               @db.Timestamp(0)
+  connection_status  database_connections_connection_status? @default(unknown)
+  created_at         DateTime?                               @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?                               @default(now()) @db.Timestamp(0)
+  is_active          Boolean?                                @default(true)
+
+  @@index([is_active], map: "idx_is_active")
+  @@index([name], map: "idx_name")
+}
+
+model db_classes {
+  id           Int      @id @default(autoincrement())
+  display_name String   @db.VarChar(255)
+  db_name      String   @db.VarChar(255)
+  is_active    Boolean? @default(true)
+}
+
+model permissions {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique(map: "name") @db.VarChar(50)
+  description      String?            @db.VarChar(255)
+  role_permissions role_permissions[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_calculation {
+  his_empno     String    @db.VarChar(12)
+  his_type      String    @db.VarChar(6)
+  amtthismth    Decimal?  @db.Decimal(19, 4)
+  totamtpayable Decimal?  @db.Decimal(19, 4)
+  totpaidtodate Decimal?  @db.Decimal(19, 4)
+  his_balance   Decimal?  @db.Decimal(19, 4)
+  Initialloan   Decimal?  @db.Decimal(19, 4)
+  hisvar        Decimal?  @db.Decimal(19, 4)
+  payindic      String?   @db.VarChar(1)
+  nmth          Int?      @db.SmallInt
+  month1        Decimal?  @db.Decimal(19, 4)
+  month2        Decimal?  @db.Decimal(19, 4)
+  month3        Decimal?  @db.Decimal(19, 4)
+  month4        Decimal?  @db.Decimal(19, 4)
+  month5        Decimal?  @db.Decimal(19, 4)
+  month6        Decimal?  @db.Decimal(19, 4)
+  month7        Decimal?  @db.Decimal(19, 4)
+  month8        Decimal?  @db.Decimal(19, 4)
+  month9        Decimal?  @db.Decimal(19, 4)
+  month10       Decimal?  @db.Decimal(19, 4)
+  month11       Decimal?  @db.Decimal(19, 4)
+  month12       Decimal?  @db.Decimal(19, 4)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @db.DateTime(0)
+  loan1         Decimal?  @db.Decimal(19, 4)
+  loan2         Decimal?  @db.Decimal(19, 4)
+  loan3         Decimal?  @db.Decimal(19, 4)
+  loan4         Decimal?  @db.Decimal(19, 4)
+  loan5         Decimal?  @db.Decimal(19, 4)
+  loan6         Decimal?  @db.Decimal(19, 4)
+  loan7         Decimal?  @db.Decimal(19, 4)
+  loan8         Decimal?  @db.Decimal(19, 4)
+  loan9         Decimal?  @db.Decimal(19, 4)
+  loan10        Decimal?  @db.Decimal(19, 4)
+  loan11        Decimal?  @db.Decimal(19, 4)
+  loan12        Decimal?  @db.Decimal(19, 4)
+
+  @@index([his_empno, his_type], map: "idx_empno_type")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_cumulated {
+  EmpL_ID       String    @db.VarChar(12)
+  procmth       String    @db.VarChar(2)
+  taxabletodate Decimal?  @db.Decimal(19, 4)
+  taxtodate     Decimal?  @db.Decimal(19, 4)
+  taxmth        Decimal?  @db.Decimal(19, 4)
+  grossmth      Decimal?  @db.Decimal(19, 4)
+  grosstodate   Decimal?  @db.Decimal(19, 4)
+  netmth        Decimal?  @db.Decimal(19, 4)
+  nettodate     Decimal?  @db.Decimal(19, 4)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+model py_debug_log {
+  id                 Int       @id @default(autoincrement())
+  log_time           DateTime? @db.DateTime(0)
+  log_message        String?   @db.VarChar(1000)
+  v_year_value       Int?
+  v_month_value      Int?      @db.TinyInt
+  p_user_value       String?   @db.VarChar(100)
+  p_batch_size_value Int?
+  p_globalcoy_value  String?   @db.VarChar(10)
+  p_gtaxed_value     String?   @db.VarChar(3)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_documentation {
+  id          Int       @id @default(autoincrement())
+  doc_numb    String    @db.VarChar(12)
+  doc_year    String    @db.VarChar(4)
+  doc_month   String    @db.VarChar(2)
+  doc_ref     String?   @db.VarChar(20)
+  doc_remark  String?   @db.VarChar(100)
+  createdby   String?   @db.VarChar(50)
+  datecreated DateTime? @db.Date
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_elementtype {
+  PaymentType String    @id @db.VarChar(6)
+  elmDesc     String?   @db.VarChar(35)
+  Ledger      String?   @db.VarChar(15)
+  perc        String?   @db.VarChar(20)
+  std         Decimal?  @db.Decimal(19, 4)
+  maxi        Decimal?  @db.Decimal(18, 0)
+  bpay        String    @db.VarChar(3)
+  yearend     String    @db.VarChar(3)
+  Status      String?   @db.VarChar(10)
+  dependence  String?   @db.VarChar(6)
+  payfreq     String?   @db.VarChar(1)
+  pmonth      String?   @db.VarChar(2)
+  freetax     Decimal?  @db.Decimal(19, 4)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+  ipis        String?   @db.VarChar(3)
+
+  @@index([dependence, perc, std], map: "idx_elementtype_depend")
+  @@index([PaymentType, Status, bpay], map: "idx_elementtype_lookup")
+  @@index([payfreq, pmonth], map: "idx_elementtype_payfreq")
+  @@index([PaymentType], map: "idx_elementtype_payment")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_emplhistory {
+  period            String    @db.VarChar(15)
+  Empl_ID           String    @db.VarChar(15)
+  Surname           String?   @db.VarChar(20)
+  OtherName         String?   @db.VarChar(40)
+  Title             String?   @db.VarChar(15)
+  TITLEDESC         String?   @db.VarChar(10)
+  Sex               String?   @db.VarChar(6)
+  JobClass          String?   @db.VarChar(4)
+  Jobtitle          String?   @db.VarChar(50)
+  MaritalStatus     String?   @db.VarChar(1)
+  Factory           String?   @db.VarChar(10)
+  Location          String?   @db.VarChar(10)
+  Birthdate         String?   @db.VarChar(8)
+  DateEmpl          String?   @db.VarChar(8)
+  DateLeft          String?   @db.VarChar(8)
+  TELEPHONE         String?   @db.VarChar(30)
+  HOMEADDR          String?   @db.VarChar(50)
+  nok_name          String?   @db.VarChar(30)
+  Bankcode          String?   @db.VarChar(15)
+  bankbranch        String?   @db.VarChar(30)
+  BankACNumber      String?   @db.VarChar(20)
+  InternalACNo      String?   @db.VarChar(20)
+  StateofOrigin     String?   @db.VarChar(12)
+  LocalGovt         String?   @db.VarChar(3)
+  TaxCode           String?   @db.VarChar(20)
+  NSITFcode         String?   @db.VarChar(20)
+  NHFcode           String?   @db.VarChar(20)
+  seniorno          String?   @db.VarChar(15)
+  command           String?   @db.VarChar(15)
+  nok_addr          String?   @db.VarChar(50)
+  Language1         String?   @db.VarChar(3)
+  Fluency1          String?   @db.VarChar(6)
+  Language2         String?   @db.VarChar(3)
+  Fluency2          String?   @db.VarChar(6)
+  Language3         String?   @db.VarChar(3)
+  Fluency3          String?   @db.VarChar(6)
+  Country           String?   @db.VarChar(3)
+  Height            String?   @db.VarChar(5)
+  Weight            String?   @db.VarChar(5)
+  BloodGroup        String?   @db.VarChar(2)
+  Genotype          String?   @db.VarChar(2)
+  entry_mode        String?   @db.VarChar(15)
+  Status            String?   @db.VarChar(1)
+  datepmted         String?   @db.VarChar(8)
+  dateconfirmed     String?   @db.VarChar(8)
+  taxed             String?   @db.VarChar(3)
+  gradelevel        String?   @db.VarChar(10)
+  gradetype         String?   @db.VarChar(10)
+  entitlement       String?   @db.VarChar(15)
+  town              String?   @db.VarChar(15)
+  createdby         String?   @db.VarChar(20)
+  datecreated       DateTime? @db.DateTime(0)
+  nok_relation      String?   @db.VarChar(50)
+  specialisation    String?   @db.VarChar(50)
+  accomm_type       String?   @db.VarChar(20)
+  qual_allow        String?   @db.VarChar(3)
+  sp_qual_allow     String?   @db.VarChar(3)
+  rent_subsidy      String?   @db.VarChar(3)
+  instruction_allow String?   @db.VarChar(3)
+  command_allow     String?   @db.VarChar(3)
+  award             String?   @db.VarChar(30)
+  payrollclass      String?   @db.VarChar(2)
+  email             String?   @db.VarChar(50)
+  pfacode           String?   @db.VarChar(20)
+  state             String?   @db.VarChar(15)
+  emolumentform     String?   @db.Char(3)
+  dateadded         DateTime? @db.DateTime(0)
+  exittype          String?   @db.VarChar(20)
+
+  @@index([Empl_ID], map: "idx_py_emplhistory_empl_id")
+  @@index([Empl_ID, period], map: "idx_py_emplhistory_empl_period")
+  @@index([period], map: "idx_py_emplhistory_period")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_exclusivetype {
+  typeH     String? @db.VarChar(6)
+  typeL     String? @db.VarChar(6)
+  typehdesc String? @db.VarChar(50)
+  typeldesc String? @db.VarChar(50)
+
+  @@index([typeH, typeL], map: "idx_exclusivetype_types")
+  @@ignore
+}
+
+model py_get_value_debug {
+  test_id    Int       @id @default(autoincrement())
+  empno      String?   @db.VarChar(10)
+  wtype      String?   @db.VarChar(6)
+  step       String?   @db.VarChar(50)
+  value1     String?   @db.VarChar(100)
+  value2     String?   @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_header {
+  EmpL_ID     String    @db.VarChar(12)
+  effdate     String?   @db.VarChar(8)
+  nomth       Int?      @db.SmallInt
+  amtad       String?   @db.VarChar(10)
+  ind         String?   @db.VarChar(10)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@index([EmpL_ID], map: "idx_header_empid")
+  @@index([EmpL_ID], map: "idx_empl_id")
+  @@ignore
+}
+
+model py_inputhistory {
+  pay_period  String    @db.VarChar(20)
+  Empl_ID     String    @db.VarChar(20)
+  type        String    @db.VarChar(20)
+  mak1        String?   @db.VarChar(50)
+  amtp        Decimal?  @default(0.00) @db.Decimal(18, 2)
+  mak2        String?   @db.VarChar(50)
+  amt         Decimal?  @default(0.00) @db.Decimal(18, 2)
+  amtad       Decimal?  @default(0.00) @db.Decimal(18, 2)
+  amttd       Decimal?  @default(0.00) @db.Decimal(18, 2)
+  payind      String?   @db.VarChar(10)
+  nomth       Int?
+  createdby   String?   @db.VarChar(50)
+  datecreated DateTime? @default(now()) @db.DateTime(0)
+
+  @@id([pay_period, Empl_ID, type])
+  @@unique([pay_period, Empl_ID, type], map: "uk_period_empno_type")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_ipis_payhistory {
+  numb        String    @db.VarChar(10)
+  period      String    @db.VarChar(6)
+  bpc         String    @db.VarChar(5)
+  bpa         String?   @db.VarChar(40)
+  bp          String?   @db.VarChar(40)
+  bpm         Decimal?  @db.Decimal(19, 4)
+  createdby   String?   @db.VarChar(30)
+  datecreated DateTime? @db.DateTime(0)
+  Type        String    @db.VarChar(6)
+
+  @@index([numb], map: "idx_py_ipis_payhistory_numb")
+  @@index([numb, period, Type], map: "idx_py_ipis_payhistory_numb_period_type")
+  @@index([period], map: "idx_py_ipis_payhistory_period")
+  @@index([Type], map: "idx_py_ipis_payhistory_type")
+  @@ignore
+}
+
+model py_mastercum {
+  his_Empno            String    @db.VarChar(20)
+  his_type             Int       @db.SmallInt
+  his_taxfreepaytodate Decimal?  @db.Decimal(18, 2)
+  his_taxabletodate    Decimal?  @db.Decimal(18, 2)
+  his_taxtodate        Decimal?  @db.Decimal(18, 2)
+  his_taxmth           Decimal?  @db.Decimal(18, 2)
+  his_grossmth         Decimal?  @db.Decimal(18, 2)
+  his_grosstodate      Decimal?  @db.Decimal(18, 2)
+  his_netmth           Decimal?  @db.Decimal(18, 2)
+  his_nettodate        Decimal?  @db.Decimal(18, 2)
+  his_over             Decimal?  @db.Decimal(18, 2)
+  his_roundup          Decimal?  @db.Decimal(18, 2)
+  his_lastpay          Decimal?  @db.Decimal(18, 2)
+  createdby            String?   @db.VarChar(20)
+  datecreated          DateTime? @db.Date
+  bankcode             String?   @db.VarChar(10)
+  bankbranch           String?   @db.VarChar(5)
+  bankacnumber         String?   @db.VarChar(20)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+  @@index([his_Empno, his_type], map: "idx_mastercum_empno_type")
+  @@index([his_Empno, his_type], map: "idx_empno_month")
+}
+
+model py_masterope {
+  his_Empno   String    @db.VarChar(50)
+  his_type    String    @db.VarChar(50)
+  his_htodate DateTime? @db.Date
+  his_hdone1  Decimal?  @db.Decimal(18, 2)
+  his_sdone1  Decimal?  @db.Decimal(18, 2)
+  his_rdone1  Decimal?  @db.Decimal(18, 2)
+  his_hdone2  Decimal?  @db.Decimal(18, 2)
+  his_sdone2  Decimal?  @db.Decimal(18, 2)
+  his_rdone2  Decimal?  @db.Decimal(18, 2)
+  createdby   String?   @db.VarChar(100)
+  datecreated DateTime? @default(now()) @db.DateTime(0)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+}
+
+model py_masterover {
+  his_Empno   String    @db.VarChar(12)
+  his_type    String    @db.VarChar(6)
+  his_ord     Float?    @db.Float
+  his_sat     Float?    @db.Float
+  his_sun     Float?    @db.Float
+  his_pub     Float?    @db.Float
+  his_todate  Float?    @db.Float
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.Date
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+}
+
+model py_masterpayded {
+  his_Empno     String    @db.VarChar(20)
+  his_type      String    @db.VarChar(6)
+  amtthismth    Decimal?  @db.Decimal(18, 3)
+  totamtpayable Decimal?  @db.Decimal(18, 3)
+  totpaidtodate Decimal?  @db.Decimal(18, 3)
+  his_balance   Decimal?  @db.Decimal(18, 2)
+  Initialloan   Decimal?  @db.Decimal(18, 2)
+  hisvar        Decimal?  @db.Decimal(18, 2)
+  payindic      String?   @db.Char(1)
+  nmth          Decimal?  @db.Decimal(18, 2)
+  month1        Decimal?  @db.Decimal(18, 2)
+  month2        Decimal?  @db.Decimal(18, 2)
+  month3        Decimal?  @db.Decimal(18, 2)
+  month4        Decimal?  @db.Decimal(18, 2)
+  month5        Decimal?  @db.Decimal(18, 2)
+  month6        Decimal?  @db.Decimal(18, 2)
+  month7        Decimal?  @db.Decimal(18, 2)
+  month8        Decimal?  @db.Decimal(18, 2)
+  month9        Decimal?  @db.Decimal(18, 2)
+  month10       Decimal?  @db.Decimal(18, 2)
+  month11       Decimal?  @db.Decimal(18, 2)
+  month12       Decimal?  @db.Decimal(18, 2)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @db.Date
+  loan1         Decimal?  @db.Decimal(18, 2)
+  loan2         Decimal?  @db.Decimal(18, 2)
+  loan3         Decimal?  @db.Decimal(18, 2)
+  loan4         Decimal?  @db.Decimal(18, 2)
+  loan5         Decimal?  @db.Decimal(18, 2)
+  loan6         Decimal?  @db.Decimal(18, 2)
+  loan7         Decimal?  @db.Decimal(18, 2)
+  loan8         Decimal?  @db.Decimal(18, 2)
+  loan9         Decimal?  @db.Decimal(18, 2)
+  loan10        Decimal?  @db.Decimal(18, 2)
+  loan11        Decimal?  @db.Decimal(18, 2)
+  loan12        Decimal?  @db.Decimal(18, 2)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+  @@index([his_Empno, his_type, totamtpayable], map: "idx_masterpayded_amount")
+  @@index([his_Empno, payindic], map: "idx_masterpayded_empno_payind")
+  @@index([his_type, amtthismth], map: "idx_masterpayded_type_amount")
+  @@index([his_Empno, his_type], map: "idx_empno_type")
+}
+
+model py_monthend {
+  id                  BigInt    @id @default(autoincrement())
+  employees_processed Int?
+  records_processed   Int?
+  process_year        Int?
+  process_month       Int?      @db.TinyInt
+  datecreated         DateTime? @db.DateTime(0)
+  createdby           String?   @db.VarChar(45)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_oneoffhistory {
+  his_period String?  @db.VarChar(6)
+  his_empno  String?  @db.VarChar(50)
+  his_type   String?  @db.VarChar(6)
+  his_amount Decimal? @db.Decimal(19, 4)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_oneoffrank {
+  one_type     String    @db.VarChar(6)
+  one_amount01 Decimal?  @db.Decimal(19, 4)
+  one_amount02 Decimal?  @db.Decimal(19, 4)
+  one_amount03 Decimal?  @db.Decimal(19, 4)
+  one_amount04 Decimal?  @db.Decimal(19, 4)
+  one_amount05 Decimal?  @db.Decimal(19, 4)
+  one_amount06 Decimal?  @db.Decimal(19, 4)
+  one_amount07 Decimal?  @db.Decimal(19, 4)
+  one_amount08 Decimal?  @db.Decimal(19, 4)
+  one_amount09 Decimal?  @db.Decimal(19, 4)
+  one_amount10 Decimal?  @db.Decimal(19, 4)
+  one_amount11 Decimal?  @db.Decimal(19, 4)
+  one_amount12 Decimal?  @db.Decimal(19, 4)
+  one_amount13 Decimal?  @db.Decimal(19, 4)
+  one_amount14 Decimal?  @db.Decimal(19, 4)
+  one_amount15 Decimal?  @db.Decimal(19, 4)
+  one_amount16 Decimal?  @db.Decimal(19, 4)
+  one_amount17 Decimal?  @db.Decimal(19, 4)
+  one_amount18 Decimal?  @db.Decimal(19, 4)
+  one_amount19 Decimal?  @db.Decimal(19, 4)
+  one_amount20 Decimal?  @db.Decimal(19, 4)
+  one_amount21 Decimal?  @db.Decimal(19, 4)
+  one_amount22 Decimal?  @db.Decimal(19, 4)
+  createdby    String?   @db.VarChar(20)
+  datecreated  DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_oneofftype {
+  one_type    String    @db.VarChar(6)
+  one_perc    String?   @db.VarChar(20)
+  one_std     Decimal?  @db.Decimal(19, 4)
+  one_maxi    Decimal?  @db.Decimal(18, 0)
+  one_bpay    String    @db.VarChar(3)
+  one_depend  String?   @db.VarChar(6)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_operative {
+  Empl_id     String    @db.VarChar(12)
+  type        String    @db.VarChar(6)
+  htodate     Decimal?  @db.Decimal(18, 0)
+  hdone1      Decimal?  @db.Decimal(18, 0)
+  hdone2      Decimal?  @db.Decimal(18, 0)
+  sdone1      Decimal?  @db.Decimal(18, 0)
+  sdone2      Decimal?  @db.Decimal(18, 0)
+  rdone1      Decimal?  @db.Decimal(18, 0)
+  rdone2      Decimal?  @db.Decimal(18, 0)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@index([Empl_id, type], map: "idx_operative_emptype")
+  @@ignore
+}
+
+model py_overtime {
+  Empl_id     String    @db.VarChar(12)
+  type        String    @db.VarChar(6)
+  ord         Decimal?  @db.Decimal(19, 4)
+  sat         Decimal?  @db.Decimal(19, 4)
+  sun         Decimal?  @db.Decimal(19, 4)
+  pub         Decimal?  @db.Decimal(19, 4)
+  todate      Decimal?  @db.Decimal(19, 4)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@id([Empl_id, type])
+  @@index([Empl_id, type], map: "idx_overtime_emptype")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_payded {
+  Empl_ID     String?   @db.VarChar(20)
+  type        String    @db.VarChar(6)
+  mak1        String?   @db.VarChar(3)
+  amtp        Decimal?  @db.Decimal(19, 4)
+  mak2        String?   @db.VarChar(3)
+  amt         Decimal?  @db.Decimal(19, 4)
+  amtad       String?   @db.VarChar(6)
+  amttd       Decimal?  @db.Decimal(19, 4)
+  payind      String?   @db.VarChar(1)
+  nomth       Int?      @db.SmallInt
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+  batchName   String?   @db.VarChar(255)
+
+  @@index([Empl_ID, type], map: "idx_payded_emptype")
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model py_payhistory {
+  his_empno       String    @db.VarChar(15)
+  his_year        Int       @db.SmallInt
+  his_type        String    @db.VarChar(6)
+  createdby       String?   @db.VarChar(20)
+  datecreated     DateTime? @default(now()) @db.DateTime(0)
+  modifiedby      String?   @db.VarChar(20)
+  datemodified    DateTime? @db.DateTime(0)
+  amtthismth1     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable1  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate1  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan1    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic1       String?   @default("") @db.VarChar(2)
+  nmth1           Int?      @default(0)
+  loan1           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode1       String?   @default("") @db.VarChar(20)
+  bankbranch1     String?   @default("") @db.VarChar(6)
+  bankacnumber1   String?   @default("") @db.VarChar(30)
+  amtthismth2     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable2  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate2  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan2    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic2       String?   @default("") @db.VarChar(2)
+  nmth2           Int?      @default(0)
+  loan2           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode2       String?   @default("") @db.VarChar(20)
+  bankbranch2     String?   @default("") @db.VarChar(6)
+  bankacnumber2   String?   @default("") @db.VarChar(30)
+  amtthismth3     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable3  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate3  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan3    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic3       String?   @default("") @db.VarChar(2)
+  nmth3           Int?      @default(0)
+  loan3           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode3       String?   @default("") @db.VarChar(20)
+  bankbranch3     String?   @default("") @db.VarChar(6)
+  bankacnumber3   String?   @default("") @db.VarChar(30)
+  amtthismth4     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable4  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate4  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan4    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic4       String?   @default("") @db.VarChar(2)
+  nmth4           Int?      @default(0)
+  loan4           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode4       String?   @default("") @db.VarChar(20)
+  bankbranch4     String?   @default("") @db.VarChar(6)
+  bankacnumber4   String?   @default("") @db.VarChar(30)
+  amtthismth5     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable5  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate5  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan5    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic5       String?   @default("") @db.VarChar(2)
+  nmth5           Int?      @default(0)
+  loan5           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode5       String?   @default("") @db.VarChar(20)
+  bankbranch5     String?   @default("") @db.VarChar(6)
+  bankacnumber5   String?   @default("") @db.VarChar(30)
+  amtthismth6     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable6  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate6  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan6    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic6       String?   @default("") @db.VarChar(2)
+  nmth6           Int?      @default(0)
+  loan6           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode6       String?   @default("") @db.VarChar(20)
+  bankbranch6     String?   @default("") @db.VarChar(6)
+  bankacnumber6   String?   @default("") @db.VarChar(30)
+  amtthismth7     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable7  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate7  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan7    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic7       String?   @default("") @db.VarChar(2)
+  nmth7           Int?      @default(0)
+  loan7           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode7       String?   @default("") @db.VarChar(20)
+  bankbranch7     String?   @default("") @db.VarChar(6)
+  bankacnumber7   String?   @default("") @db.VarChar(30)
+  amtthismth8     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable8  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate8  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan8    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic8       String?   @default("") @db.VarChar(2)
+  nmth8           Int?      @default(0)
+  loan8           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode8       String?   @default("") @db.VarChar(20)
+  bankbranch8     String?   @default("") @db.VarChar(6)
+  bankacnumber8   String?   @default("") @db.VarChar(30)
+  amtthismth9     Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable9  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate9  Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan9    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic9       String?   @default("") @db.VarChar(2)
+  nmth9           Int?      @default(0)
+  loan9           Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode9       String?   @default("") @db.VarChar(20)
+  bankbranch9     String?   @default("") @db.VarChar(6)
+  bankacnumber9   String?   @default("") @db.VarChar(30)
+  amtthismth10    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable10 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate10 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan10   Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic10      String?   @default("") @db.VarChar(2)
+  nmth10          Int?      @default(0)
+  loan10          Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode10      String?   @default("") @db.VarChar(20)
+  bankbranch10    String?   @default("") @db.VarChar(6)
+  bankacnumber10  String?   @default("") @db.VarChar(30)
+  amtthismth11    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable11 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate11 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan11   Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic11      String?   @default("") @db.VarChar(2)
+  nmth11          Int?      @default(0)
+  loan11          Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode11      String?   @default("") @db.VarChar(20)
+  bankbranch11    String?   @default("") @db.VarChar(6)
+  bankacnumber11  String?   @default("") @db.VarChar(30)
+  amtthismth12    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totamtpayable12 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  totpaidtodate12 Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  Initialloan12   Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  payindic12      String?   @default("") @db.VarChar(2)
+  nmth12          Int?      @default(0)
+  loan12          Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  bankcode12      String?   @default("") @db.VarChar(20)
+  bankbranch12    String?   @default("") @db.VarChar(6)
+  bankacnumber12  String?   @default("") @db.VarChar(30)
+
+  @@id([his_empno, his_year, his_type])
+  @@index([his_type], map: "idx_py_payhistory_type")
+  @@index([his_year], map: "idx_py_payhistory_year")
+}
+
+model py_payperrank {
+  one_type     String    @id @db.VarChar(6)
+  one_amount01 Decimal?  @db.Decimal(19, 4)
+  one_amount02 Decimal?  @db.Decimal(19, 4)
+  one_amount03 Decimal?  @db.Decimal(19, 4)
+  one_amount04 Decimal?  @db.Decimal(19, 4)
+  one_amount05 Decimal?  @db.Decimal(19, 4)
+  one_amount06 Decimal?  @db.Decimal(19, 4)
+  one_amount07 Decimal?  @db.Decimal(19, 4)
+  one_amount08 Decimal?  @db.Decimal(19, 4)
+  one_amount09 Decimal?  @db.Decimal(19, 4)
+  one_amount10 Decimal?  @db.Decimal(19, 4)
+  one_amount11 Decimal?  @db.Decimal(19, 4)
+  one_amount12 Decimal?  @db.Decimal(19, 4)
+  one_amount13 Decimal?  @db.Decimal(19, 4)
+  one_amount14 Decimal?  @db.Decimal(19, 4)
+  one_amount15 Decimal?  @db.Decimal(19, 4)
+  one_amount16 Decimal?  @db.Decimal(19, 4)
+  one_amount17 Decimal?  @db.Decimal(19, 4)
+  one_amount18 Decimal?  @db.Decimal(19, 4)
+  one_amount19 Decimal?  @db.Decimal(19, 4)
+  one_amount20 Decimal?  @db.Decimal(19, 4)
+  one_amount21 Decimal?  @db.Decimal(19, 4)
+  one_amount22 Decimal?  @db.Decimal(19, 4)
+  createdby    String?   @db.VarChar(20)
+  datecreated  DateTime? @default(now()) @db.DateTime(0)
+}
+
+model py_payrollclass {
+  classcode   String                  @id @db.VarChar(5)
+  classname   String?                 @db.VarChar(30)
+  status      py_payrollclass_status? @default(active)
+  dateupdated DateTime?               @db.DateTime(0)
+  db_name     String?                 @db.VarChar(45)
+
+  @@index([classcode], map: "idx_payroll_classcode")
+}
+
+model py_performance_log {
+  id                BigInt                     @id @default(autoincrement())
+  procedure_name    String?                    @db.VarChar(100)
+  process_year      Int?
+  process_month     Int?                       @db.TinyInt
+  records_processed Int?
+  execution_time_ms Int?
+  started_at        DateTime?                  @db.DateTime(0)
+  completed_at      DateTime?                  @db.DateTime(0)
+  status            py_performance_log_status?
+  error_details     String?                    @db.MediumText
+
+  @@index([procedure_name, process_year, process_month], map: "idx_procedure")
+}
+
+model py_process_control {
+  id                      Int                        @id @default(autoincrement())
+  process_year            Int
+  process_month           Int                        @db.TinyInt
+  status                  py_process_control_status? @default(PENDING)
+  phase                   String?                    @db.VarChar(50)
+  started_by              String?                    @db.VarChar(100)
+  started_date            DateTime?                  @db.DateTime(0)
+  completed_date          DateTime?                  @db.DateTime(0)
+  total_employees         Int?                       @default(0)
+  total_records_processed Int?                       @default(0)
+  processing_time_seconds Int?                       @default(0)
+  error_message           String?                    @db.MediumText
+
+  @@unique([process_year, process_month], map: "uk_period")
+  @@index([status], map: "idx_status")
+}
+
+model py_process_log {
+  id            BigInt                 @id @default(autoincrement())
+  module        String                 @db.VarChar(50)
+  action        String                 @db.VarChar(100)
+  process_year  Int?
+  process_month Int?                   @db.TinyInt
+  username      String?                @db.VarChar(100)
+  status        py_process_log_status? @default(STARTED)
+  message       String?                @db.MediumText
+  started_at    DateTime?              @default(now()) @db.DateTime(0)
+  completed_at  DateTime?              @db.DateTime(0)
+  created_at    DateTime?              @db.Date
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_savcumulated {
+  EmpL_ID       String    @db.VarChar(12)
+  procmth       String    @db.VarChar(2)
+  taxabletodate Decimal?  @db.Decimal(19, 4)
+  taxtodate     Decimal?  @db.Decimal(19, 4)
+  taxmth        Decimal?  @db.Decimal(19, 4)
+  grossmth      Decimal?  @db.Decimal(19, 4)
+  grosstodate   Decimal?  @db.Decimal(19, 4)
+  netmth        Decimal?  @db.Decimal(19, 4)
+  nettodate     Decimal?  @db.Decimal(19, 4)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_savelement {
+  PaymentType String    @id @db.VarChar(6)
+  elmDesc     String?   @db.VarChar(35)
+  Ledger      String?   @db.VarChar(15)
+  perc        String?   @db.VarChar(20)
+  std         Decimal?  @db.Decimal(19, 4)
+  maxi        Decimal?  @db.Decimal(18, 0)
+  bpay        String    @db.VarChar(3)
+  yearend     String    @db.VarChar(3)
+  Status      String?   @db.VarChar(10)
+  dependence  String?   @db.VarChar(6)
+  payfreq     String?   @db.VarChar(1)
+  pmonth      String?   @db.VarChar(2)
+  freetax     Decimal?  @db.Decimal(19, 4)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+  ipis        String?   @db.VarChar(3)
+
+  @@index([dependence, perc, std], map: "idx_elementtype_depend")
+  @@index([PaymentType, Status, bpay], map: "idx_elementtype_lookup")
+  @@index([payfreq, pmonth], map: "idx_elementtype_payfreq")
+  @@index([PaymentType], map: "idx_elementtype_payment")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_savheader {
+  EmpL_ID     String    @db.VarChar(12)
+  effdate     String?   @db.VarChar(8)
+  nomth       Int?      @db.SmallInt
+  amtad       String?   @db.VarChar(10)
+  ind         String?   @db.VarChar(10)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@index([EmpL_ID], map: "idx_header_empid")
+  @@ignore
+}
+
+model py_savmascum {
+  his_Empno            String    @db.VarChar(20)
+  his_type             Int       @db.SmallInt
+  his_taxfreepaytodate Decimal?  @db.Decimal(18, 2)
+  his_taxabletodate    Decimal?  @db.Decimal(18, 2)
+  his_taxtodate        Decimal?  @db.Decimal(18, 2)
+  his_taxmth           Decimal?  @db.Decimal(18, 2)
+  his_grossmth         Decimal?  @db.Decimal(18, 2)
+  his_grosstodate      Decimal?  @db.Decimal(18, 2)
+  his_netmth           Decimal?  @db.Decimal(18, 2)
+  his_nettodate        Decimal?  @db.Decimal(18, 2)
+  his_over             Decimal?  @db.Decimal(18, 2)
+  his_roundup          Decimal?  @db.Decimal(18, 2)
+  his_lastpay          Decimal?  @db.Decimal(18, 2)
+  createdby            String?   @db.VarChar(20)
+  datecreated          DateTime? @db.Date
+  bankcode             String?   @db.VarChar(10)
+  bankbranch           String?   @db.VarChar(5)
+  bankacnumber         String?   @db.VarChar(20)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+  @@index([his_Empno, his_type], map: "idx_mastercum_empno_type")
+}
+
+model py_savmaspayded {
+  his_Empno     String    @db.VarChar(20)
+  his_type      String    @db.VarChar(6)
+  amtthismth    Decimal?  @db.Decimal(18, 3)
+  totamtpayable Decimal?  @db.Decimal(18, 3)
+  totpaidtodate Decimal?  @db.Decimal(18, 3)
+  his_balance   Decimal?  @db.Decimal(18, 2)
+  Initialloan   Decimal?  @db.Decimal(18, 2)
+  hisvar        Decimal?  @db.Decimal(18, 2)
+  payindic      String?   @db.Char(1)
+  nmth          Decimal?  @db.Decimal(18, 2)
+  month1        Decimal?  @db.Decimal(18, 2)
+  month2        Decimal?  @db.Decimal(18, 2)
+  month3        Decimal?  @db.Decimal(18, 2)
+  month4        Decimal?  @db.Decimal(18, 2)
+  month5        Decimal?  @db.Decimal(18, 2)
+  month6        Decimal?  @db.Decimal(18, 2)
+  month7        Decimal?  @db.Decimal(18, 2)
+  month8        Decimal?  @db.Decimal(18, 2)
+  month9        Decimal?  @db.Decimal(18, 2)
+  month10       Decimal?  @db.Decimal(18, 2)
+  month11       Decimal?  @db.Decimal(18, 2)
+  month12       Decimal?  @db.Decimal(18, 2)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @db.Date
+  loan1         Decimal?  @db.Decimal(18, 2)
+  loan2         Decimal?  @db.Decimal(18, 2)
+  loan3         Decimal?  @db.Decimal(18, 2)
+  loan4         Decimal?  @db.Decimal(18, 2)
+  loan5         Decimal?  @db.Decimal(18, 2)
+  loan6         Decimal?  @db.Decimal(18, 2)
+  loan7         Decimal?  @db.Decimal(18, 2)
+  loan8         Decimal?  @db.Decimal(18, 2)
+  loan9         Decimal?  @db.Decimal(18, 2)
+  loan10        Decimal?  @db.Decimal(18, 2)
+  loan11        Decimal?  @db.Decimal(18, 2)
+  loan12        Decimal?  @db.Decimal(18, 2)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+  @@index([his_Empno, his_type, totamtpayable], map: "idx_masterpayded_amount")
+  @@index([his_Empno], map: "idx_masterpayded_empno")
+  @@index([his_Empno, payindic], map: "idx_masterpayded_empno_payind")
+  @@index([his_Empno, his_type], map: "idx_masterpayded_empno_type")
+  @@index([his_type], map: "idx_masterpayded_type")
+  @@index([his_type, amtthismth], map: "idx_masterpayded_type_amount")
+}
+
+model py_savmasterope {
+  his_Empno   String    @db.VarChar(50)
+  his_type    String    @db.VarChar(50)
+  his_htodate DateTime? @db.Date
+  his_hdone1  Decimal?  @db.Decimal(18, 2)
+  his_sdone1  Decimal?  @db.Decimal(18, 2)
+  his_rdone1  Decimal?  @db.Decimal(18, 2)
+  his_hdone2  Decimal?  @db.Decimal(18, 2)
+  his_sdone2  Decimal?  @db.Decimal(18, 2)
+  his_rdone2  Decimal?  @db.Decimal(18, 2)
+  createdby   String?   @db.VarChar(100)
+  datecreated DateTime? @default(now()) @db.DateTime(0)
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+}
+
+model py_savmasterover {
+  his_Empno   String    @db.VarChar(12)
+  his_type    String    @db.VarChar(6)
+  his_ord     Float?    @db.Float
+  his_sat     Float?    @db.Float
+  his_sun     Float?    @db.Float
+  his_pub     Float?    @db.Float
+  his_todate  Float?    @db.Float
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.Date
+
+  @@id([his_Empno, his_type])
+  @@unique([his_Empno, his_type], map: "uk_empno_type")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_savoperative {
+  Empl_id     String    @db.VarChar(12)
+  type        String    @db.VarChar(6)
+  htodate     Decimal?  @db.Decimal(18, 0)
+  hdone1      Decimal?  @db.Decimal(18, 0)
+  hdone2      Decimal?  @db.Decimal(18, 0)
+  sdone1      Decimal?  @db.Decimal(18, 0)
+  sdone2      Decimal?  @db.Decimal(18, 0)
+  rdone1      Decimal?  @db.Decimal(18, 0)
+  rdone2      Decimal?  @db.Decimal(18, 0)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@index([Empl_id, type], map: "idx_operative_emptype")
+  @@ignore
+}
+
+model py_savovertime {
+  Empl_id     String    @db.VarChar(12)
+  type        String    @db.VarChar(6)
+  ord         Decimal?  @db.Decimal(19, 4)
+  sat         Decimal?  @db.Decimal(19, 4)
+  sun         Decimal?  @db.Decimal(19, 4)
+  pub         Decimal?  @db.Decimal(19, 4)
+  todate      Decimal?  @db.Decimal(19, 4)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@id([Empl_id, type])
+  @@index([Empl_id, type], map: "idx_overtime_emptype")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_savpayded {
+  Empl_id     String    @db.VarChar(12)
+  type        String    @db.VarChar(6)
+  mak1        String?   @db.VarChar(3)
+  amtp        Decimal?  @db.Decimal(19, 4)
+  mak2        String?   @db.VarChar(3)
+  amt         Decimal?  @db.Decimal(19, 4)
+  amtad       String?   @db.VarChar(6)
+  amttd       Decimal?  @db.Decimal(19, 4)
+  payind      String?   @db.VarChar(1)
+  nomth       Int?      @db.SmallInt
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@index([Empl_id, type], map: "idx_payded_emptype")
+  @@ignore
+}
+
+model py_savstdrate {
+  type      String  @id @db.VarChar(6)
+  stdfix    String? @db.VarChar(1)
+  ord       Float?  @db.Float
+  sat       Float?  @db.Float
+  sun       Float?  @db.Float
+  pub       Float?  @db.Float
+  shift     Float?  @db.Float
+  relay     Float?  @db.Float
+  basicpay  String? @db.VarChar(6)
+  mth       Int?    @db.SmallInt
+  pmth      Int?    @db.SmallInt
+  createdby String? @db.VarChar(10)
+
+  @@index([type, mth, ord], map: "idx_stdrate_type")
+}
+
+model py_stdrate {
+  type      String  @id @db.VarChar(6)
+  stdfix    String? @db.VarChar(1)
+  ord       Float?  @db.Float
+  sat       Float?  @db.Float
+  sun       Float?  @db.Float
+  pub       Float?  @db.Float
+  shift     Float?  @db.Float
+  relay     Float?  @db.Float
+  basicpay  String? @db.VarChar(6)
+  mth       Int?    @db.SmallInt
+  pmth      Int?    @db.SmallInt
+  createdby String? @db.VarChar(10)
+}
+
+model py_tabcont {
+  dept    String   @db.VarChar(10)
+  loc     String   @db.VarChar(10)
+  type1   String?  @db.VarChar(10)
+  desc1   String?  @db.VarChar(100)
+  amt1    Decimal? @db.Decimal(15, 2)
+  ledger1 String?  @db.VarChar(20)
+  amt2    Decimal? @db.Decimal(15, 2)
+  tax     Decimal? @db.Decimal(15, 2)
+  net     Decimal? @db.Decimal(15, 2)
+  roundup Decimal? @db.Decimal(5, 2)
+  pmonth  Int      @db.TinyInt
+  coyname String?  @db.VarChar(100)
+
+  @@id([dept, loc, pmonth])
+}
+
+model py_tax {
+  INTER     String   @id @db.VarChar(3)
+  val       Int?
+  perc      Decimal? @db.Decimal(24, 0)
+  createdby String?  @db.VarChar(20)
+  cumval    Decimal? @db.Decimal(19, 4)
+  lowbound  Decimal? @db.Decimal(19, 4)
+}
+
+model py_tempbankoneoff {
+  id           Int       @id @default(autoincrement())
+  work_station String?   @db.VarChar(50)
+  empno        String?   @db.VarChar(30)
+  one_type     String?   @db.VarChar(20)
+  one_desc     String?   @db.VarChar(255)
+  title        String?   @db.VarChar(20)
+  surname      String?   @db.VarChar(100)
+  othername    String?   @db.VarChar(100)
+  bankname     String?   @db.VarChar(150)
+  bankbranch   String?   @db.VarChar(150)
+  acctno       String?   @db.VarChar(30)
+  cbn_bank     String?   @db.VarChar(10)
+  cbn_branch   String?   @db.VarChar(10)
+  net          Decimal?  @db.Decimal(15, 2)
+  rec_count    Int?
+  payrollclass String?   @db.VarChar(30)
+  gsm_number   String?   @db.VarChar(20)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_tempnsitf {
+  work_station String   @db.VarChar(50)
+  empl_no      String   @db.VarChar(50)
+  salary       Decimal? @default(0.00) @db.Decimal(18, 2)
+  emple        Decimal? @default(0.00) @db.Decimal(18, 2)
+  emplr        Decimal? @default(0.00) @db.Decimal(18, 2)
+  tot          Decimal? @default(0.00) @db.Decimal(18, 2)
+  emol         Decimal? @default(0.00) @db.Decimal(18, 2)
+  name         String?  @db.VarChar(150)
+  procyear     Int?
+  procmonth    Int?
+  nsitf        String?  @db.VarChar(15)
+  pfc          Decimal? @default(0.00) @db.Decimal(18, 2)
+  pfa          Decimal? @default(0.00) @db.Decimal(18, 2)
+
+  @@ignore
+}
+
+model py_tempslipnlpc {
+  id           Int       @id @default(autoincrement())
+  work_station String    @db.VarChar(50)
+  NUMB         String    @db.VarChar(12)
+  title        String?   @db.VarChar(20)
+  surname      String?   @db.VarChar(50)
+  othername    String?   @db.VarChar(50)
+  bankacnumber String?   @db.VarChar(20)
+  bankname     String?   @db.VarChar(50)
+  gradelevel   String?   @db.VarChar(10)
+  gradetype    String?   @db.VarChar(20)
+  bpc          String?   @db.VarChar(30)
+  bpa          String?   @db.VarChar(30)
+  BP           String?   @db.VarChar(30)
+  BPM          Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  loan         Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  ltenor       Int?      @default(0)
+  lbal         Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  lmth         Int?      @default(0)
+  ord          String?   @db.VarChar(4)
+  desc1        String?   @db.VarChar(20)
+  tpcoy        String?   @db.VarChar(100)
+  tpaddr       String?   @db.VarChar(200)
+  prvtaxtodate Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  taxtodate    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  grstodate    Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  freetodate   Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  txbltodate   Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  currtax      Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  netpay       Decimal?  @default(0.0000) @db.Decimal(19, 4)
+  groupcode    String?   @db.VarChar(10)
+  factory      String?   @db.VarChar(70)
+  location     String?   @db.VarChar(70)
+  nsitf        String?   @db.VarChar(50)
+  nsitfcode    String?   @db.VarChar(20)
+  email        String?   @db.VarChar(100)
+  status       Int?      @default(0)
+  payclass     String?   @db.VarChar(3)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([bpc], map: "idx_category")
+  @@index([NUMB], map: "idx_employee")
+  @@index([work_station], map: "idx_workstation")
+  @@index([work_station, NUMB], map: "idx_workstation_employee")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_tempsumm {
+  work_station String   @db.VarChar(50)
+  fact         String?  @db.VarChar(10)
+  loc          String?  @db.VarChar(10)
+  type1        String?  @db.VarChar(10)
+  factory      String?  @db.VarChar(50)
+  locdesc      String?  @db.VarChar(100)
+  desc1        String?  @db.VarChar(100)
+  amt1         Decimal? @db.Decimal(15, 2)
+  ledger1      String?  @db.VarChar(20)
+  amt2         Decimal? @db.Decimal(15, 2)
+  tax          Decimal? @db.Decimal(15, 2)
+  net          Decimal? @db.Decimal(15, 2)
+  roundup      Decimal? @db.Decimal(5, 2)
+  pmonth       Int?     @db.TinyInt
+  coyname      String?  @db.VarChar(100)
+  cyear        Int?     @db.Year
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_webpayslip {
+  work_station String?  @db.VarChar(50)
+  NUMB         String?  @db.VarChar(12)
+  bpc          String?  @db.VarChar(2)
+  bpa          String?  @db.VarChar(20)
+  BP           String?  @db.VarChar(30)
+  BPM          Decimal? @db.Decimal(19, 4)
+  loan         Decimal? @db.Decimal(19, 4)
+  ltenor       Int?
+  lbal         Decimal? @db.Decimal(19, 4)
+  lmth         Int?
+  ord          String?  @db.VarChar(6)
+  desc1        String?  @db.VarChar(10)
+  tpcoy        String?  @db.VarChar(40)
+  tpaddr       String?  @db.VarChar(70)
+  title        String?  @db.VarChar(15)
+  surname      String?  @db.VarChar(20)
+  othername    String?  @db.VarChar(40)
+  bankacnumber String?  @db.VarChar(20)
+  bankname     String?  @db.VarChar(70)
+  gradelevel   String?  @db.VarChar(4)
+  gradetype    String?  @db.VarChar(10)
+  prvtaxtodate Decimal? @db.Decimal(19, 4)
+  taxtodate    Decimal? @db.Decimal(19, 4)
+  grstodate    Decimal? @db.Decimal(19, 4)
+  freetodate   Decimal? @db.Decimal(19, 4)
+  txbltodate   Decimal? @db.Decimal(19, 4)
+  currtax      Decimal? @db.Decimal(19, 4)
+  netpay       Decimal? @db.Decimal(19, 4)
+  groupcode    String?  @db.VarChar(10)
+  factory      String?  @db.VarChar(70)
+  location     String?  @db.VarChar(70)
+  nsitf        String?  @db.VarChar(50)
+  nsitfcode    String?  @db.VarChar(20)
+  email        String?  @db.VarChar(200)
+  status       Int?
+  payclass     String?  @db.VarChar(5)
+  ippis        String?  @db.VarChar(20)
+  source       String?  @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_wkemployees {
+  Empl_ID           String    @db.VarChar(12)
+  Surname           String?   @db.VarChar(20)
+  OtherName         String?   @db.VarChar(40)
+  Title             String?   @db.VarChar(15)
+  TITLEDESC         String?   @db.VarChar(10)
+  Sex               String?   @db.VarChar(6)
+  JobClass          String?   @db.VarChar(4)
+  Jobtitle          String?   @db.VarChar(50)
+  MaritalStatus     String?   @db.VarChar(1)
+  Factory           String?   @db.VarChar(10)
+  Location          String?   @db.VarChar(10)
+  Birthdate         String?   @db.VarChar(8)
+  DateEmpl          String?   @db.VarChar(8)
+  DateLeft          String?   @db.VarChar(8)
+  TELEPHONE         String?   @db.VarChar(30)
+  HOMEADDR          String?   @db.VarChar(50)
+  nok_name          String?   @db.VarChar(30)
+  Bankcode          String?   @db.VarChar(15)
+  bankbranch        String?   @db.VarChar(30)
+  BankACNumber      String?   @db.VarChar(20)
+  InternalACNo      String?   @db.VarChar(20)
+  StateofOrigin     String?   @db.VarChar(12)
+  LocalGovt         String?   @db.VarChar(3)
+  TaxCode           String?   @db.VarChar(20)
+  NSITFcode         String?   @db.VarChar(20)
+  NHFcode           String?   @db.VarChar(20)
+  seniorno          String?   @db.VarChar(15)
+  command           String?   @db.VarChar(15)
+  nok_addr          String?   @db.VarChar(50)
+  Language1         String?   @db.VarChar(3)
+  Fluency1          String?   @db.VarChar(6)
+  Language2         String?   @db.VarChar(3)
+  Fluency2          String?   @db.VarChar(6)
+  Language3         String?   @db.VarChar(3)
+  Fluency3          String?   @db.VarChar(6)
+  Country           String?   @db.VarChar(3)
+  Height            String?   @db.VarChar(5)
+  Weight            String?   @db.VarChar(5)
+  BloodGroup        String?   @db.VarChar(2)
+  Genotype          String?   @db.VarChar(2)
+  entry_mode        String?   @db.VarChar(15)
+  Status            String?   @db.VarChar(1)
+  datepmted         String?   @db.VarChar(8)
+  dateconfirmed     String?   @db.VarChar(8)
+  taxed             String?   @db.VarChar(3)
+  gradelevel        String?   @db.VarChar(10)
+  gradetype         String?   @db.VarChar(10)
+  entitlement       String?   @db.VarChar(15)
+  town              String?   @db.VarChar(15)
+  createdby         String?   @db.VarChar(20)
+  datecreated       DateTime? @db.DateTime(0)
+  nok_relation      String?   @db.VarChar(50)
+  specialisation    String?   @db.VarChar(50)
+  accomm_type       String?   @db.VarChar(20)
+  qual_allow        String?   @db.VarChar(3)
+  sp_qual_allow     String?   @db.VarChar(3)
+  rent_subsidy      String?   @db.VarChar(3)
+  instruction_allow String?   @db.VarChar(3)
+  command_allow     String?   @db.VarChar(3)
+  award             String?   @db.VarChar(30)
+  payrollclass      String?   @db.Char(2)
+  taxstate          String?   @db.VarChar(3)
+  gsm_number        String?   @db.VarChar(20)
+
+  @@index([BankACNumber, Bankcode], map: "idx_wkemployees_bank_account")
+  @@index([Bankcode], map: "idx_wkemployees_bankcode")
+  @@index([Empl_ID, datepmted], map: "idx_wkemployees_dates")
+  @@index([Empl_ID], map: "idx_wkemployees_empid")
+  @@index([Empl_ID], map: "idx_wkemployees_empno")
+  @@index([Empl_ID, gradelevel, gradetype], map: "idx_wkemployees_grade")
+  @@index([Location], map: "idx_wkemployees_location")
+  @@index([Empl_ID], map: "idx_empl_id")
+  @@ignore
+}
+
+model role_permissions {
+  role_id       Int
+  permission_id Int
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_permissions_ibfk_1")
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_permissions_ibfk_2")
+
+  @@id([role_id, permission_id])
+  @@index([permission_id], map: "permission_id")
+}
+
+model roles {
+  id                    Int                     @id @default(autoincrement())
+  name                  String                  @unique(map: "name") @db.VarChar(50)
+  description           String?                 @db.VarChar(255)
+  role_menu_permissions role_menu_permissions[]
+  role_permissions      role_permissions[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model aa_salaryscale {
+  salcode String   @db.VarChar(10)
+  saltype String   @db.VarChar(6)
+  grade   String   @db.VarChar(2)
+  step1   Decimal? @db.Decimal(19, 4)
+  step2   Decimal? @db.Decimal(19, 4)
+  step3   Decimal? @db.Decimal(19, 4)
+  step4   Decimal? @db.Decimal(19, 4)
+  step5   Decimal? @db.Decimal(19, 4)
+  step6   Decimal? @db.Decimal(19, 4)
+  step7   Decimal? @db.Decimal(19, 4)
+  step8   Decimal? @db.Decimal(19, 4)
+  step9   Decimal? @db.Decimal(19, 4)
+  step10  Decimal? @db.Decimal(19, 4)
+  step11  Decimal? @db.Decimal(19, 4)
+  step12  Decimal? @db.Decimal(19, 4)
+  step13  Decimal? @db.Decimal(19, 4)
+  step14  Decimal? @db.Decimal(19, 4)
+  step15  Decimal? @db.Decimal(19, 4)
+  step16  Decimal? @db.Decimal(19, 4)
+  step17  Decimal? @db.Decimal(19, 4)
+  step18  Decimal? @db.Decimal(19, 4)
+  step19  Decimal? @db.Decimal(19, 4)
+  step20  Decimal? @db.Decimal(19, 4)
+  user    String?  @db.VarChar(10)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ac_businessline {
+  busline     String    @db.VarChar(15)
+  busdesc     String?   @db.VarChar(25)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ac_costcentre {
+  unitcode    String    @db.VarChar(10)
+  unitdesc    String?   @db.VarChar(50)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ac_months {
+  cmonth    String  @db.VarChar(2)
+  mthdesc   String? @db.VarChar(10)
+  createdby String? @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model accchart {
+  acctcode1   String? @db.VarChar(1)
+  acctcode2   String? @db.VarChar(2)
+  acctcode3   String? @db.VarChar(3)
+  acctcode4   String? @db.VarChar(4)
+  acctcode5   String? @db.VarChar(5)
+  acctcode6   String? @db.VarChar(6)
+  acctnumber  String  @db.VarChar(15)
+  description String? @db.VarChar(60)
+  acctcode7   String? @db.VarChar(60)
+  oldnumber   String? @db.VarChar(15)
+  acctype     Int?
+  acctsubtype String? @db.VarChar(1)
+  address     String? @db.Text
+  subcode     String? @db.VarChar(5)
+  accgroup    String? @db.VarChar(2)
+  blgroup1    String? @db.VarChar(5)
+  blgroupdes1 String? @db.VarChar(50)
+  blgroup2    String? @db.VarChar(5)
+  blgroupdes2 String? @db.VarChar(50)
+  blgroup3    String? @db.VarChar(5)
+  blgroupdes3 String? @db.VarChar(50)
+  blgroup4    String? @db.VarChar(5)
+  blgroupdes4 String? @db.VarChar(50)
+  blsum1      String? @db.VarChar(2)
+  blsum2      String? @db.VarChar(2)
+  blsum3      String? @db.VarChar(2)
+  blsum4      String? @db.VarChar(2)
+  blsumdesc1  String? @db.VarChar(50)
+  blsumdesc2  String? @db.VarChar(50)
+  blsumdesc3  String? @db.VarChar(50)
+  blsumdesc4  String? @db.VarChar(50)
+  cfgroup1    String? @db.VarChar(10)
+  cfgroup2    String? @db.VarChar(10)
+  cfgroup3    String? @db.VarChar(10)
+  cfgroup4    String? @db.VarChar(10)
+  cfgroupdes1 String? @db.VarChar(50)
+  cfgroupdes2 String? @db.VarChar(50)
+  cfgroupdes3 String? @db.VarChar(50)
+  cfgroupdes4 String? @db.VarChar(50)
+  cfsumdesc1  String? @db.VarChar(50)
+  cfsumdesc2  String? @db.VarChar(50)
+  cfsumdesc3  String? @db.VarChar(50)
+  cfsumdesc4  String? @db.VarChar(50)
+  mggroup1    String? @db.VarChar(10)
+  mglgroup2   String? @db.VarChar(10)
+  mggroup3    String? @db.VarChar(10)
+  mggroup4    String? @db.VarChar(5)
+  mggroupdes1 String? @db.VarChar(50)
+  mggroupdes2 String? @db.VarChar(50)
+  mggroupdes3 String? @db.VarChar(50)
+  mggroupdes4 String? @db.VarChar(50)
+  mgsum1      String? @db.VarChar(10)
+  mgsum2      String? @db.VarChar(10)
+  mgsum3      String? @db.VarChar(10)
+  mgsum4      String? @db.VarChar(10)
+  mgsumdesc1  String? @db.VarChar(50)
+  mgsumdesc2  String? @db.VarChar(50)
+  mgsumdesc3  String? @db.VarChar(50)
+  mgsumdesc4  String? @db.VarChar(50)
+
+  @@ignore
+}
+
+model children {
+  child_id      Int       @id @default(autoincrement())
+  Empl_ID       String    @db.VarChar(12)
+  chname        String?   @db.VarChar(100)
+  chstreet      String?   @db.VarChar(100)
+  chtown        String?   @db.VarChar(50)
+  Lgcode        String?   @db.VarChar(10)
+  Statecode     String?   @db.VarChar(10)
+  chphone       String?   @db.VarChar(20)
+  chemail       String?   @db.VarChar(50)
+  chpobox       String?   @db.VarChar(20)
+  Sex           String?   @db.VarChar(6)
+  chactive      Boolean?  @default(true)
+  dateofbirth   DateTime? @db.Date
+  chschool      String?   @db.VarChar(100)
+  createdby     String?   @db.VarChar(20)
+  datecreated   DateTime? @default(now()) @db.DateTime(0)
+  modifiedby    String?   @db.VarChar(20)
+  datemodified  DateTime? @db.DateTime(0)
+  officeaddress String?   @db.MediumText
+  occupation    String?   @db.VarChar(50)
+
+  @@index([chactive], map: "idx_children_active")
+  @@index([Empl_ID], map: "idx_children_empl")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_allowances {
+  id               Int                      @id @default(autoincrement())
+  service_no       String                   @db.VarChar(30)
+  allow_type       ef_allowances_allow_type
+  is_active        Boolean                  @default(false)
+  specify          String?                  @db.VarChar(200)
+  gcb_number       String?                  @db.VarChar(255)
+  created_at       DateTime                 @default(now()) @db.DateTime(0)
+  updated_at       DateTime                 @default(now()) @db.DateTime(0)
+  ef_personalinfos ef_personalinfos         @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_allow_person")
+
+  @@unique([service_no, allow_type], map: "uq_allow_person_type")
+  @@index([service_no], map: "idx_allow_svcno")
+  @@index([service_no], map: "idx_allowances_svc")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_audit_logs {
+  id           BigInt               @id @default(autoincrement())
+  table_name   String               @db.VarChar(100)
+  action       ef_audit_logs_action
+  record_key   String               @db.VarChar(100)
+  old_values   Json?
+  new_values   Json?
+  performed_by String               @db.VarChar(30)
+  ip_address   String?              @db.VarChar(45)
+  user_agent   String?              @db.VarChar(300)
+  performed_at DateTime             @default(now()) @db.DateTime(0)
+
+  @@index([performed_at], map: "idx_al_at")
+  @@index([performed_by], map: "idx_al_by")
+  @@index([record_key], map: "idx_al_key")
+  @@index([performed_by, performed_at], map: "idx_al_performed_by")
+  @@index([table_name], map: "idx_al_table")
+  @@index([table_name, action, performed_at], map: "idx_al_table_action")
+}
+
+model ef_banks {
+  bankcode   String  @id @db.VarChar(50)
+  bankname   String? @db.VarChar(150)
+  branchname String? @db.Text
+  address    String? @db.Text
+  email      String? @db.Text
+  cbn_code   String? @db.Text
+  cbn_branch String? @db.Text
+}
+
+model ef_branches {
+  Id         Int     @id @default(autoincrement())
+  code       String? @db.VarChar(20)
+  branchName String? @db.VarChar(100)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_children {
+  id               Int              @id @default(autoincrement())
+  service_no       String           @db.VarChar(30)
+  child_name       String           @db.VarChar(100)
+  birth_order      Int?             @db.TinyInt
+  created_at       DateTime         @default(now()) @db.DateTime(0)
+  updated_at       DateTime         @default(now()) @db.DateTime(0)
+  ef_personalinfos ef_personalinfos @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_children_person")
+
+  @@index([service_no], map: "idx_children_svc")
+  @@index([service_no], map: "idx_children_svcno")
+}
+
+model ef_commands {
+  Id          Int        @id @default(autoincrement())
+  code        String?    @db.VarChar(20)
+  commandName String?    @db.VarChar(150)
+  ef_ships    ef_ships[]
+}
+
+model ef_contactus {
+  Id          Int     @id @default(autoincrement())
+  PersonName  String? @db.Text
+  Ship        String? @db.Text
+  Email       String? @db.Text
+  PhoneNumber String? @db.Text
+  Message     String? @db.Text
+  Response    String? @db.Text
+}
+
+model ef_control {
+  Id                 Int      @id @default(autoincrement())
+  ship               String?  @db.Text
+  startdate          DateTime @db.DateTime(0)
+  enddate            DateTime @db.DateTime(0)
+  status             String   @db.VarChar(50)
+  createdby          String?  @db.Text
+  datecreated        DateTime @db.DateTime(0)
+  processingyear     String?  @db.Text
+  commanderSignature String?  @db.Text
+
+  @@index([status], map: "idx_control_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_documents {
+  id               Int                   @id @default(autoincrement())
+  service_no       String                @db.VarChar(30)
+  doc_type         ef_documents_doc_type
+  cloudinary_id    String?               @db.VarChar(300)
+  url              String?               @db.VarChar(500)
+  uploaded_by      String?               @db.VarChar(30)
+  uploaded_at      DateTime              @default(now()) @db.DateTime(0)
+  replaced_at      DateTime?             @db.DateTime(0)
+  ef_personalinfos ef_personalinfos      @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_docs_person")
+
+  @@unique([service_no, doc_type], map: "uq_doc_person_type")
+  @@index([service_no], map: "idx_docs_svcno")
+  @@index([service_no], map: "idx_documents_svc")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_emolument_forms {
+  id                Int                       @id @default(autoincrement())
+  service_no        String                    @db.VarChar(30)
+  form_year         String                    @db.VarChar(10)
+  form_number       String?                   @db.VarChar(50)
+  payroll_class     String?                   @db.VarChar(5)
+  ship              String?                   @db.VarChar(100)
+  command           String?                   @db.VarChar(50)
+  status            ef_emolument_forms_status @default(DRAFT)
+  snapshot          Json?
+  submitted_at      DateTime?                 @db.DateTime(0)
+  created_at        DateTime                  @default(now()) @db.DateTime(0)
+  updated_at        DateTime                  @default(now()) @db.DateTime(0)
+  ef_personalinfos  ef_personalinfos          @relation(fields: [service_no], references: [serviceNumber], onDelete: NoAction, map: "fk_form_person")
+  ef_form_approvals ef_form_approvals[]
+
+  @@unique([service_no, form_year], map: "uq_ef_svcno_year")
+  @@unique([service_no, form_year], map: "uq_form_person_year")
+  @@index([service_no, ship], map: "idx_ef_service_ship")
+  @@index([service_no, ship, status], map: "idx_ef_service_ship_status")
+  @@index([service_no, form_year], map: "idx_ef_service_year")
+  @@index([status], map: "idx_ef_status")
+  @@index([command], map: "idx_form_command")
+  @@index([ship], map: "idx_form_ship")
+  @@index([status], map: "idx_form_status")
+  @@index([service_no], map: "idx_form_svcno")
+  @@index([form_year], map: "idx_form_year")
+}
+
+model ef_entrymodes {
+  Id   Int     @id @default(autoincrement())
+  Name String? @db.VarChar(100)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_form_approvals {
+  id                 Int                @id @default(autoincrement())
+  form_id            Int
+  action             String             @db.VarChar(50)
+  from_status        String?            @db.VarChar(30)
+  to_status          String             @db.VarChar(30)
+  performed_by       String             @db.VarChar(30)
+  performer_role     String?            @db.VarChar(20)
+  remarks            String?            @db.Text
+  performed_at       DateTime           @default(now()) @db.DateTime(0)
+  ef_emolument_forms ef_emolument_forms @relation(fields: [form_id], references: [id], onDelete: NoAction, map: "fk_approval_form")
+
+  @@index([performed_at], map: "idx_approvals_at")
+  @@index([performed_by], map: "idx_approvals_by")
+  @@index([form_id], map: "idx_approvals_form")
+  @@index([form_id], map: "idx_fa_form_id")
+  @@index([performed_by, performed_at], map: "idx_fa_performed_by")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model ef_hr_employees {
+  Empl_ID           String    @db.VarChar(12)
+  Surname           String?   @db.VarChar(20)
+  OtherName         String?   @db.VarChar(40)
+  Title             String?   @db.VarChar(15)
+  TITLEDESC         String?   @db.VarChar(10)
+  Sex               String?   @db.VarChar(6)
+  JobClass          String?   @db.VarChar(4)
+  Jobtitle          String?   @db.VarChar(50)
+  MaritalStatus     String?   @db.VarChar(1)
+  Factory           String?   @db.VarChar(10)
+  Location          String?   @db.VarChar(10)
+  Birthdate         String?   @db.VarChar(8)
+  DateEmpl          String?   @db.VarChar(8)
+  DateLeft          String?   @db.VarChar(8)
+  TELEPHONE         String?   @db.VarChar(30)
+  HOMEADDR          String?   @db.VarChar(50)
+  nok_name          String?   @db.VarChar(30)
+  Bankcode          String?   @db.VarChar(15)
+  bankbranch        String?   @db.VarChar(30)
+  BankACNumber      String?   @db.VarChar(20)
+  InternalACNo      String?   @db.VarChar(20)
+  StateofOrigin     String?   @db.VarChar(12)
+  LocalGovt         String?   @db.VarChar(3)
+  TaxCode           String?   @db.VarChar(20)
+  NSITFcode         String?   @db.VarChar(20)
+  NHFcode           String?   @db.VarChar(20)
+  seniorno          String?   @db.VarChar(15)
+  command           String?   @db.VarChar(15)
+  nok_addr          String?   @db.VarChar(50)
+  Language1         String?   @db.VarChar(3)
+  Fluency1          String?   @db.VarChar(6)
+  Language2         String?   @db.VarChar(3)
+  Fluency2          String?   @db.VarChar(6)
+  Language3         String?   @db.VarChar(3)
+  Fluency3          String?   @db.VarChar(6)
+  Country           String?   @db.VarChar(3)
+  Height            String?   @db.VarChar(5)
+  Weight            String?   @db.VarChar(5)
+  BloodGroup        String?   @db.VarChar(2)
+  Genotype          String?   @db.VarChar(2)
+  entry_mode        String?   @db.VarChar(15)
+  Status            String?   @db.VarChar(1)
+  datepmted         String?   @db.VarChar(8)
+  dateconfirmed     String?   @db.VarChar(8)
+  taxed             String?   @db.VarChar(3)
+  gradelevel        String?   @db.VarChar(10)
+  gradetype         String?   @db.VarChar(10)
+  entitlement       String?   @db.VarChar(15)
+  town              String?   @db.VarChar(15)
+  createdby         String?   @db.VarChar(20)
+  datecreated       DateTime? @db.DateTime(0)
+  nok_relation      String?   @db.VarChar(50)
+  specialisation    String?   @db.VarChar(50)
+  accomm_type       String?   @db.VarChar(20)
+  qual_allow        String?   @db.VarChar(3)
+  sp_qual_allow     String?   @db.VarChar(3)
+  rent_subsidy      String?   @db.VarChar(3)
+  instruction_allow String?   @db.VarChar(3)
+  command_allow     String?   @db.VarChar(3)
+  award             String?   @db.VarChar(30)
+  payrollclass      String?   @db.VarChar(2)
+  email             String?   @db.VarChar(50)
+  pfacode           String?   @db.VarChar(20)
+  state             String?   @db.VarChar(15)
+  emolumentform     String?   @db.VarChar(3)
+  dateadded         DateTime? @db.DateTime(0)
+  exittype          String?   @db.VarChar(10)
+  gsm_number        String?   @db.VarChar(15)
+  nokphone          String?   @db.VarChar(15)
+  religion          String?   @db.VarChar(20)
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_loans {
+  id               Int                @id @default(autoincrement())
+  service_no       String             @db.VarChar(30)
+  loan_type        ef_loans_loan_type
+  amount           Decimal?           @db.Decimal(15, 2)
+  year_taken       String?            @db.VarChar(50)
+  tenor            Int?
+  balance          Decimal?           @db.Decimal(15, 2)
+  specify          String?            @db.VarChar(200)
+  created_at       DateTime           @default(now()) @db.DateTime(0)
+  updated_at       DateTime           @default(now()) @db.DateTime(0)
+  ef_personalinfos ef_personalinfos   @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_loans_person")
+
+  @@unique([service_no, loan_type], map: "uq_loan_person_type")
+  @@index([service_no], map: "idx_loans_svc")
+  @@index([service_no], map: "idx_loans_svcno")
+}
+
+model ef_localgovts {
+  Id        Int       @id @default(autoincrement())
+  code      String?   @db.VarChar(20)
+  lgaName   String    @db.VarChar(150)
+  StateId   Int
+  ef_states ef_states @relation(fields: [StateId], references: [StateId], onDelete: NoAction, onUpdate: NoAction, map: "ef_localgovts_ibfk_1")
+
+  @@index([StateId], map: "fk_lga_state")
+}
+
+model ef_menugroups {
+  Id          Int      @id @default(autoincrement())
+  Name        String?  @db.Text
+  Description String?  @db.Text
+  CreatedOn   DateTime @db.DateTime(0)
+  UpdatedOn   DateTime @db.DateTime(0)
+}
+
+model ef_menus {
+  Id          Int      @id @default(autoincrement())
+  Name        String?  @db.Text
+  Code        String?  @db.VarChar(450)
+  Controller  String?  @db.Text
+  Action      String?  @db.Text
+  Description String?  @db.Text
+  MenuGroupId Int?
+  IsActive    Boolean
+  CreatedOn   DateTime @db.DateTime(0)
+  UpdatedOn   DateTime @db.DateTime(0)
+
+  @@index([MenuGroupId], map: "idx_menus_group")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_nok {
+  id               Int              @id @default(autoincrement())
+  service_no       String           @db.VarChar(30)
+  nok_order        Int              @default(1) @db.TinyInt
+  full_name        String?          @db.VarChar(200)
+  relationship     String?          @db.VarChar(50)
+  phone1           String?          @db.VarChar(50)
+  phone2           String?          @db.VarChar(50)
+  email            String?          @db.VarChar(100)
+  address          String?          @db.Text
+  national_id      String?          @db.VarChar(50)
+  created_at       DateTime         @default(now()) @db.DateTime(0)
+  updated_at       DateTime         @default(now()) @db.DateTime(0)
+  ef_personalinfos ef_personalinfos @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_nok_person")
+
+  @@unique([service_no, nok_order], map: "uq_nok_person_order")
+  @@index([service_no], map: "idx_nok_svc")
+  @@index([service_no], map: "idx_nok_svcno")
+}
+
+model ef_personalinfos {
+  Id                         BigInt               @id @default(autoincrement())
+  serviceNumber              String               @unique(map: "uq_personalinfos_svcno") @db.VarChar(30)
+  Surname                    String?              @db.VarChar(100)
+  OtherName                  String?              @db.VarChar(100)
+  Title                      String?              @db.VarChar(10)
+  Rank                       String?              @db.VarChar(10)
+  Sex                        String?              @db.VarChar(10)
+  MaritalStatus              String?              @db.VarChar(10)
+  Birthdate                  DateTime?            @db.DateTime(0)
+  religion                   String?              @db.VarChar(50)
+  gsm_number                 String?              @db.VarChar(50)
+  gsm_number2                String?              @db.VarChar(50)
+  email                      String?              @db.VarChar(100)
+  home_address               String?              @db.VarChar(200)
+  Bankcode                   String?              @db.VarChar(50)
+  bankbranch                 String?              @db.VarChar(50)
+  BankACNumber               String?              @db.VarChar(50)
+  pfacode                    String?              @db.VarChar(50)
+  payrollclass               String?              @db.VarChar(5)
+  specialisation             String?              @db.VarChar(100)
+  command                    String?              @db.VarChar(50)
+  branch                     String?              @db.VarChar(50)
+  ship                       String?              @db.VarChar(50)
+  exittype                   String?              @db.VarChar(50)
+  DateEmpl                   DateTime?            @db.DateTime(0)
+  DateLeft                   DateTime?            @db.DateTime(0)
+  seniorityDate              DateTime?            @db.DateTime(0)
+  yearOfPromotion            String?              @db.VarChar(50)
+  expirationOfEngagementDate DateTime?            @db.DateTime(0)
+  StateofOrigin              String?              @db.VarChar(50)
+  LocalGovt                  String?              @db.VarChar(50)
+  TaxCode                    String?              @db.VarChar(50)
+  entry_mode                 String?              @db.VarChar(50)
+  Status                     String?              @db.VarChar(50)
+  taxed                      String?              @db.VarChar(50)
+  gradelevel                 String?              @db.VarChar(50)
+  gradetype                  String?              @db.VarChar(50)
+  entitlement                String?              @db.VarChar(50)
+  town                       String?              @db.VarChar(50)
+  accomm_type                String?              @db.VarChar(50)
+  GBC                        String?              @db.VarChar(50)
+  GBC_Number                 String?              @db.VarChar(50)
+  NSITFcode                  String?              @db.VarChar(50)
+  NHFcode                    String?              @db.VarChar(50)
+  div_off_name               String?              @db.VarChar(200)
+  div_off_rank               String?              @db.VarChar(50)
+  div_off_svcno              String?              @db.VarChar(50)
+  div_off_date               DateTime?            @db.DateTime(0)
+  hod_name                   String?              @db.VarChar(200)
+  hod_rank                   String?              @db.VarChar(50)
+  hod_svcno                  String?              @db.VarChar(50)
+  hod_date                   DateTime?            @db.DateTime(0)
+  cdr_name                   String?              @db.VarChar(200)
+  cdr_rank                   String?              @db.VarChar(50)
+  cdr_svcno                  String?              @db.VarChar(50)
+  cdr_date                   DateTime?            @db.DateTime(0)
+  emolumentform              String?              @db.VarChar(5)
+  createdby                  String?              @db.VarChar(200)
+  datecreated                DateTime?            @db.DateTime(0)
+  dateModify                 DateTime?            @db.DateTime(0)
+  dateVerify                 DateTime?            @db.DateTime(0)
+  verifyBy                   DateTime?            @db.DateTime(0)
+  dateconfirmed              DateTime?            @db.DateTime(0)
+  confirmedBy                String?              @db.VarChar(50)
+  division                   String?              @db.VarChar(50)
+  qualification              String?              @db.VarChar(50)
+  runoutDate                 DateTime?            @db.DateTime(0)
+  NHFcodeYear                String?              @db.VarChar(50)
+  NSITFcodeYear              String?              @db.VarChar(50)
+  formNumber                 String?              @db.VarChar(50)
+  AccountName                String?              @db.VarChar(50)
+  classes                    Int?
+  AcommodationStatus         String?              @db.Text
+  appointment                String?              @db.VarChar(50)
+  AddressofAcommodation      String?              @db.Text
+  advanceDate                DateTime?            @db.DateTime(0)
+  rankId                     Int
+  FormYear                   String?              @db.VarChar(10)
+  upload                     Boolean?
+  NIN                        String?              @db.VarChar(20)
+  fo_date                    DateTime?            @db.DateTime(0)
+  fo_name                    String?              @db.VarChar(150)
+  fo_rank                    String?              @db.VarChar(20)
+  fo_svcno                   String?              @db.VarChar(10)
+  ef_allowances              ef_allowances[]
+  ef_children                ef_children[]
+  ef_documents               ef_documents[]
+  ef_emolument_forms         ef_emolument_forms[]
+  ef_loans                   ef_loans[]
+  ef_nok                     ef_nok[]
+  ef_spouse                  ef_spouse?
+
+  @@index([command, Status], map: "idx_pi_command_status")
+  @@index([command, Status, emolumentform], map: "idx_pi_command_status_emol")
+  @@index([emolumentform], map: "idx_pi_emolumentform")
+  @@index([payrollclass, Status], map: "idx_pi_payrollclass_status")
+  @@index([ship, classes, Status], map: "idx_pi_ship_classes_status")
+  @@index([ship, Status], map: "idx_pi_ship_status")
+  @@index([ship, Status, emolumentform], map: "idx_pi_ship_status_emol")
+  @@fulltext([Surname, OtherName], map: "ft_pi_name")
+}
+
+model ef_personalinfoshist {
+  Id            Int       @id @default(autoincrement())
+  FormYear      String    @db.VarChar(10)
+  serviceNumber String    @db.VarChar(20)
+  formNumber    String?   @db.Text
+  Surname       String?   @db.Text
+  OtherName     String?   @db.Text
+  Title         String?   @db.Text
+  Rank          String?   @db.Text
+  command       String?   @db.Text
+  branch        String?   @db.Text
+  ship          String?   @db.Text
+  Status        String?   @db.Text
+  classes       Int?
+  div_off_name  String?   @db.Text
+  div_off_rank  String?   @db.Text
+  div_off_svcno String?   @db.Text
+  div_off_date  DateTime? @db.DateTime(0)
+  hod_name      String?   @db.Text
+  hod_rank      String?   @db.Text
+  hod_svcno     String?   @db.Text
+  hod_date      DateTime? @db.DateTime(0)
+  cdr_name      String?   @db.Text
+  cdr_rank      String?   @db.Text
+  cdr_svcno     String?   @db.Text
+  cdr_date      DateTime? @db.DateTime(0)
+  payrollclass  String?   @db.Text
+  emolumentform String?   @db.Text
+  dateconfirmed DateTime? @db.DateTime(0)
+  confirmedBy   String?   @db.Text
+  upload        Boolean?
+  NIN           String?   @db.VarChar(50)
+  fo_date       DateTime? @db.DateTime(0)
+  fo_name       String?   @db.VarChar(150)
+  fo_rank       String?   @db.VarChar(50)
+  fo_svcno      String?   @db.VarChar(50)
+
+  @@unique([serviceNumber, FormYear], map: "uq_hist_svcno_year")
+  @@index([serviceNumber], map: "idx_hist_svcno")
+  @@index([FormYear], map: "idx_hist_year")
+}
+
+model ef_relationships {
+  Id          Int     @id @default(autoincrement())
+  description String? @db.VarChar(100)
+}
+
+model ef_rolemenus {
+  Id        Int      @id @default(autoincrement())
+  MenuId    Int
+  RoleId    Int
+  IsActive  Boolean
+  CreatedOn DateTime @db.DateTime(0)
+  UpdatedOn DateTime @db.DateTime(0)
+}
+
+model ef_ships {
+  Id          Int         @id @default(autoincrement())
+  code        String?     @db.VarChar(20)
+  shipName    String?     @db.VarChar(150)
+  LandSea     String?     @db.VarChar(20)
+  commandid   Int
+  openship    Boolean     @default(false)
+  ef_commands ef_commands @relation(fields: [commandid], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "ef_ships_ibfk_1")
+
+  @@index([commandid], map: "fk_ship_command")
+}
+
+model ef_specialisationareas {
+  Id       Int     @id @default(autoincrement())
+  specName String? @db.VarChar(150)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_spouse {
+  id               Int              @id @default(autoincrement())
+  service_no       String           @unique(map: "uq_spouse_person") @db.VarChar(30)
+  full_name        String?          @db.VarChar(200)
+  phone1           String?          @db.VarChar(50)
+  phone2           String?          @db.VarChar(50)
+  email            String?          @db.VarChar(100)
+  created_at       DateTime         @default(now()) @db.DateTime(0)
+  updated_at       DateTime         @default(now()) @db.DateTime(0)
+  ef_personalinfos ef_personalinfos @relation(fields: [service_no], references: [serviceNumber], onDelete: Cascade, map: "fk_spouse_person")
+
+  @@index([service_no], map: "idx_spouse_svc")
+}
+
+model ef_states {
+  StateId       Int             @id @default(autoincrement())
+  Name          String          @db.VarChar(100)
+  Code          String?         @db.VarChar(10)
+  geozoneid     Int
+  CountryId     Int
+  ef_localgovts ef_localgovts[]
+}
+
+model ef_systeminfos {
+  Id             Int      @id @default(autoincrement())
+  comp_code      String?  @db.Text
+  comp_name      String?  @db.Text
+  Address        String?  @db.Text
+  SiteStatus     Int
+  opendate       DateTime @db.DateTime(0)
+  hrlink         String?  @db.Text
+  town           String?  @db.Text
+  lg             String?  @db.Text
+  state          String?  @db.Text
+  email          String?  @db.Text
+  box            String?  @db.Text
+  tel            String?  @db.Text
+  serveraddr     String?  @db.Text
+  serverport     String?  @db.Text
+  email_pword    String?  @db.Text
+  company_image  Bytes?   @db.Blob
+  datecreated    DateTime @db.DateTime(0)
+  createdby      String?  @db.Text
+  closedate      DateTime @db.DateTime(0)
+  OfficersFormNo Int
+  RatingsFormNo  Int
+  TrainingFormNo Int
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ef_user_roles {
+  id          Int                      @id @default(autoincrement())
+  user_id     String                   @db.VarChar(30)
+  role        ef_user_roles_role
+  scope_type  ef_user_roles_scope_type
+  scope_value String?                  @db.VarChar(100)
+  is_active   Boolean                  @default(true)
+  assigned_by String?                  @db.VarChar(30)
+  assigned_at DateTime                 @default(now()) @db.DateTime(0)
+  revoked_at  DateTime?                @db.DateTime(0)
+  revoked_by  String?                  @db.VarChar(30)
+
+  @@unique([user_id, role, scope_value], map: "uq_user_role_scope")
+  @@index([is_active], map: "idx_ur_active")
+  @@index([role], map: "idx_ur_role")
+  @@index([scope_type, scope_value], map: "idx_ur_scope")
+  @@index([user_id], map: "idx_ur_user_id")
+}
+
+model ef_user_tokens {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  token_hash String    @db.VarChar(255)
+  expires_at DateTime  @db.DateTime(0)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  ef_users   ef_users  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ef_user_tokens_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model ef_users {
+  id             Int              @id @default(autoincrement())
+  username       String           @unique(map: "username") @db.VarChar(50)
+  password       String           @db.VarChar(255)
+  role           ef_users_role
+  ship           String?          @db.VarChar(50)
+  command        String?          @db.VarChar(50)
+  is_active      Boolean?         @default(true)
+  expire_date    DateTime?        @db.DateTime(0)
+  last_login     DateTime?        @db.DateTime(0)
+  created_at     DateTime?        @default(now()) @db.DateTime(0)
+  updated_at     DateTime?        @default(now()) @db.DateTime(0)
+  ef_user_tokens ef_user_tokens[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model entrymode {
+  id        Int
+  entrymode String? @db.VarChar(20)
+  entryname String? @db.VarChar(50)
+  entrycode String? @db.VarChar(5)
+
+  @@ignore
+}
+
+model geozone {
+  geocode String @db.VarChar(2)
+  geoname String @id @db.VarChar(255)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model hr_employees {
+  Empl_ID             String    @id @db.VarChar(12)
+  Surname             String?   @db.VarChar(20)
+  OtherName           String?   @db.VarChar(40)
+  Title               String?   @db.VarChar(15)
+  TITLEDESC           String?   @db.VarChar(10)
+  Sex                 String?   @db.VarChar(6)
+  JobClass            String?   @db.VarChar(4)
+  Jobtitle            String?   @db.VarChar(50)
+  MaritalStatus       String?   @db.VarChar(1)
+  Factory             String?   @db.VarChar(10)
+  Location            String?   @db.VarChar(10)
+  Birthdate           String?   @db.VarChar(8)
+  DateEmpl            String?   @db.VarChar(8)
+  DateLeft            String?   @db.VarChar(8)
+  TELEPHONE           String?   @db.VarChar(30)
+  HOMEADDR            String?   @db.VarChar(50)
+  nok_name            String?   @db.VarChar(30)
+  Bankcode            String?   @db.VarChar(15)
+  bankbranch          String?   @db.VarChar(30)
+  BankACNumber        String?   @db.VarChar(20)
+  InternalACNo        String?   @db.VarChar(20)
+  StateofOrigin       String?   @db.VarChar(12)
+  LocalGovt           String?   @db.VarChar(3)
+  TaxCode             String?   @db.VarChar(20)
+  NSITFcode           String?   @db.VarChar(20)
+  NHFcode             String?   @db.VarChar(20)
+  seniorno            String?   @db.VarChar(15)
+  command             String?   @db.VarChar(15)
+  nok_addr            String?   @db.VarChar(50)
+  Language1           String?   @db.VarChar(3)
+  Fluency1            String?   @db.VarChar(6)
+  Language2           String?   @db.VarChar(3)
+  Fluency2            String?   @db.VarChar(6)
+  Language3           String?   @db.VarChar(3)
+  Fluency3            String?   @db.VarChar(6)
+  Country             String?   @db.VarChar(3)
+  Height              String?   @db.VarChar(5)
+  Weight              String?   @db.VarChar(5)
+  BloodGroup          String?   @db.VarChar(2)
+  Genotype            String?   @db.VarChar(2)
+  entry_mode          String?   @db.VarChar(15)
+  Status              String?   @db.VarChar(1)
+  datepmted           String?   @db.VarChar(8)
+  dateconfirmed       String?   @db.VarChar(8)
+  taxed               String?   @db.VarChar(3)
+  gradelevel          String?   @db.VarChar(10)
+  gradetype           String?   @db.VarChar(10)
+  entitlement         String?   @db.VarChar(15)
+  town                String?   @db.VarChar(15)
+  createdby           String?   @db.VarChar(50)
+  datecreated         DateTime? @default(now()) @db.DateTime(0)
+  nok_relation        String?   @db.VarChar(50)
+  specialisation      String?   @db.VarChar(50)
+  accomm_type         String?   @db.VarChar(20)
+  qual_allow          String?   @db.VarChar(3)
+  sp_qual_allow       String?   @db.VarChar(3)
+  rent_subsidy        String?   @db.VarChar(3)
+  instruction_allow   String?   @db.VarChar(3)
+  command_allow       String?   @db.VarChar(3)
+  award               String?   @db.VarChar(30)
+  payrollclass        String?   @db.VarChar(2)
+  email               String?   @db.VarChar(50)
+  pfacode             String?   @db.VarChar(20)
+  state               String?   @db.VarChar(15)
+  emolumentform       String?   @db.VarChar(3)
+  dateadded           DateTime? @default(now()) @db.DateTime(0)
+  exittype            String?   @db.VarChar(10)
+  gsm_number          String?   @db.VarChar(15)
+  nokphone            String?   @db.VarChar(15)
+  religion            String?   @db.VarChar(20)
+  passport            String?   @db.LongText
+  token               String?   @db.Text
+  password            String?   @db.VarChar(255)
+  password_changed_at DateTime? @db.DateTime(0)
+  force_change        Boolean?  @default(true)
+  storage_used_bytes  BigInt?   @default(0)
+  storage_quota_bytes BigInt?   @default(524288000)
+
+  @@index([payrollclass, DateLeft, exittype], map: "idx_dateleft_payroll")
+  @@index([Empl_ID], map: "idx_hr_empl_id_token")
+  @@index([DateLeft], map: "idx_hr_employees_dateleft")
+  @@index([Empl_ID], map: "idx_hr_employees_empl_id")
+  @@index([exittype], map: "idx_hr_employees_exittype")
+  @@index([Empl_ID], map: "idx_hr_password")
+  @@index([OtherName], map: "idx_othername")
+  @@index([Surname], map: "idx_surname")
+}
+
+model mail_attachment_downloads {
+  id            Int       @id @default(autoincrement())
+  attachment_id Int
+  user_id       String    @db.VarChar(50)
+  downloaded_at DateTime? @default(now()) @db.DateTime(0)
+
+  @@unique([attachment_id, user_id], map: "unique_user_attachment")
+}
+
+model mail_attachments {
+  id                     Int         @id @default(autoincrement())
+  mail_id                Int?
+  temp_token             String      @unique(map: "temp_token") @db.VarChar(64)
+  filename               String      @db.VarChar(255)
+  stored_name            String      @db.VarChar(255)
+  mime_type              String      @db.VarChar(100)
+  file_size              Int
+  uploaded_by            String      @db.VarChar(64)
+  created_at             DateTime?   @default(now()) @db.Timestamp(0)
+  content_hash           String?     @db.Char(64)
+  is_duplicate           Boolean?    @default(false)
+  original_attachment_id Int?
+  user_mails             user_mails? @relation(fields: [mail_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "mail_attachments_ibfk_1")
+
+  @@index([mail_id], map: "idx_mail_id")
+  @@index([temp_token], map: "idx_temp_token")
+  @@index([uploaded_by], map: "idx_uploaded_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model menu_items {
+  id                    Int                     @id @default(autoincrement())
+  menu_key              String                  @unique(map: "menu_key") @db.VarChar(100)
+  menu_name             String                  @db.VarChar(200)
+  parent_id             Int?
+  menu_order            Int?                    @default(0)
+  menu_type             menu_items_menu_type?   @default(item)
+  created_at            DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(0)
+  role_menu_permissions role_menu_permissions[]
+
+  @@index([menu_key], map: "idx_menu_key")
+  @@index([parent_id], map: "idx_parent")
+}
+
+model migrations {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique(map: "name") @db.VarChar(255)
+  batch       Int
+  executed_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([batch], map: "idx_batch")
+  @@index([name], map: "idx_name")
+}
+
+model new_employees {
+  Empl_ID           String    @id @db.VarChar(12)
+  Surname           String?   @db.VarChar(20)
+  OtherName         String?   @db.VarChar(40)
+  Title             String?   @db.VarChar(15)
+  TITLEDESC         String?   @db.VarChar(10)
+  Sex               String?   @db.VarChar(6)
+  JobClass          String?   @db.VarChar(4)
+  Jobtitle          String?   @db.VarChar(50)
+  MaritalStatus     String?   @db.VarChar(1)
+  Factory           String?   @db.VarChar(10)
+  Location          String?   @db.VarChar(10)
+  Birthdate         String?   @db.VarChar(8)
+  DateEmpl          String?   @db.VarChar(8)
+  DateLeft          String?   @db.VarChar(8)
+  TELEPHONE         String?   @db.VarChar(30)
+  HOMEADDR          String?   @db.VarChar(50)
+  nok_name          String?   @db.VarChar(30)
+  Bankcode          String?   @db.VarChar(15)
+  bankbranch        String?   @db.VarChar(30)
+  BankACNumber      String?   @db.VarChar(20)
+  InternalACNo      String?   @db.VarChar(20)
+  StateofOrigin     String?   @db.VarChar(12)
+  LocalGovt         String?   @db.VarChar(3)
+  TaxCode           String?   @db.VarChar(20)
+  NSITFcode         String?   @db.VarChar(20)
+  NHFcode           String?   @db.VarChar(20)
+  seniorno          String?   @db.VarChar(15)
+  command           String?   @db.VarChar(15)
+  nok_addr          String?   @db.VarChar(50)
+  Language1         String?   @db.VarChar(3)
+  Fluency1          String?   @db.VarChar(6)
+  Language2         String?   @db.VarChar(3)
+  Fluency2          String?   @db.VarChar(6)
+  Language3         String?   @db.VarChar(3)
+  Fluency3          String?   @db.VarChar(6)
+  Country           String?   @db.VarChar(3)
+  Height            String?   @db.VarChar(5)
+  Weight            String?   @db.VarChar(5)
+  BloodGroup        String?   @db.VarChar(2)
+  Genotype          String?   @db.VarChar(2)
+  entry_mode        String?   @db.VarChar(15)
+  Status            String?   @db.VarChar(1)
+  datepmted         String?   @db.VarChar(8)
+  dateconfirmed     String?   @db.VarChar(8)
+  taxed             String?   @db.VarChar(3)
+  gradelevel        String?   @db.VarChar(10)
+  gradetype         String?   @db.VarChar(10)
+  entitlement       String?   @db.VarChar(15)
+  town              String?   @db.VarChar(15)
+  createdby         String?   @db.VarChar(20)
+  datecreated       DateTime? @default(now()) @db.DateTime(0)
+  nok_relation      String?   @db.VarChar(50)
+  specialisation    String?   @db.VarChar(50)
+  accomm_type       String?   @db.VarChar(20)
+  qual_allow        String?   @db.VarChar(3)
+  sp_qual_allow     String?   @db.VarChar(3)
+  rent_subsidy      String?   @db.VarChar(3)
+  instruction_allow String?   @db.VarChar(3)
+  command_allow     String?   @db.VarChar(3)
+  award             String?   @db.VarChar(30)
+  payrollclass      String?   @db.VarChar(2)
+  email             String?   @db.VarChar(50)
+  pfacode           String?   @db.VarChar(20)
+  state             String?   @db.VarChar(15)
+  emolumentform     String?   @db.VarChar(3)
+  dateadded         DateTime? @default(now()) @db.DateTime(0)
+  exittype          String?   @db.VarChar(10)
+  gsm_number        String?   @db.VarChar(15)
+  nokphone          String?   @db.VarChar(15)
+  religion          String?   @db.VarChar(20)
+  passport          String?   @db.LongText
+
+  @@index([Jobtitle], map: "idx_empl_jobtitle")
+  @@index([Status], map: "idx_empl_status")
+  @@index([Surname], map: "idx_empl_surname")
+  @@index([DateLeft], map: "idx_hr_employees_dateleft")
+  @@index([Empl_ID], map: "idx_hr_employees_empl_id")
+  @@index([exittype], map: "idx_hr_employees_exittype")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model new_maspayded {
+  his_Empno     String?   @db.VarChar(255)
+  his_type      String?   @db.VarChar(255)
+  amtthismth    String?   @db.VarChar(255)
+  totamtpayable String?   @db.VarChar(255)
+  totpaidtodate DateTime? @db.Date
+  his_balance   String?   @db.VarChar(255)
+  Initialloan   String?   @db.VarChar(255)
+  hisvar        String?   @db.VarChar(255)
+  payindic      String?   @db.VarChar(255)
+  nmth          String?   @db.VarChar(255)
+  month1        String?   @db.VarChar(255)
+  month2        String?   @db.VarChar(255)
+  month3        String?   @db.VarChar(255)
+  month4        String?   @db.VarChar(255)
+  month5        String?   @db.VarChar(255)
+  month6        String?   @db.VarChar(255)
+  month7        String?   @db.VarChar(255)
+  month8        String?   @db.VarChar(255)
+  month9        String?   @db.VarChar(255)
+  month10       String?   @db.VarChar(255)
+  month11       String?   @db.VarChar(255)
+  month12       String?   @db.VarChar(255)
+  createdby     DateTime? @db.Date
+  datecreated   DateTime? @db.Date
+  loan1         String?   @db.VarChar(255)
+  loan2         String?   @db.VarChar(255)
+  loan3         String?   @db.VarChar(255)
+  loan4         String?   @db.VarChar(255)
+  loan5         String?   @db.VarChar(255)
+  loan6         String?   @db.VarChar(255)
+  loan7         String?   @db.VarChar(255)
+  loan8         String?   @db.VarChar(255)
+  loan9         String?   @db.VarChar(255)
+  loan10        String?   @db.VarChar(255)
+  loan11        String?   @db.VarChar(255)
+  loan12        String?   @db.VarChar(255)
+
+  @@ignore
+}
+
+model nextofkin {
+  nok_id        Int       @id @default(autoincrement())
+  Empl_ID       String    @db.VarChar(12)
+  FirstName     String?   @db.VarChar(50)
+  LastName      String?   @db.VarChar(50)
+  RShipcode     String?   @db.VarChar(10)
+  FullAddress   String?   @db.MediumText
+  MobileNumber  String?   @db.VarChar(20)
+  HomeNumber    String?   @db.VarChar(20)
+  EmailAddress  String?   @db.VarChar(100)
+  PlaceOfWork   String?   @db.VarChar(100)
+  NextofkinType String?   @db.VarChar(20)
+  IsActive      Boolean   @default(true)
+  CreatedDate   DateTime? @default(now()) @db.DateTime(0)
+  CreatedBy     String?   @db.VarChar(20)
+  ModifiedDate  DateTime? @db.DateTime(0)
+  ModifiedBy    String?   @db.VarChar(20)
+  dateofbirth   DateTime? @db.Date
+
+  @@index([IsActive], map: "idx_nok_active")
+  @@index([Empl_ID], map: "idx_nok_empl")
+  @@index([NextofkinType], map: "idx_nok_type")
+}
+
+model py_bank {
+  bankcode             String    @db.VarChar(15)
+  branchcode           String    @db.VarChar(15)
+  bankname             String?   @db.VarChar(35)
+  branchname           String?   @db.VarChar(35)
+  address              String?   @db.VarChar(50)
+  CompanyAcctNo        String?   @db.VarChar(20)
+  ContactMgrAccountant String?   @db.VarChar(25)
+  remarks              String?   @db.VarChar(30)
+  telephone            String?   @db.VarChar(50)
+  email                String?   @db.VarChar(50)
+  contact              String?   @db.VarChar(50)
+  createdby            String?   @db.VarChar(20)
+  datecreated          DateTime? @db.DateTime(0)
+  cbn_code             String?   @db.VarChar(20)
+  cbn_branch           String?   @db.VarChar(20)
+
+  @@id([bankcode, branchcode])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_bankcpo {
+  bankcode             String    @db.VarChar(15)
+  branchcode           String    @db.VarChar(15)
+  bankname             String?   @db.VarChar(35)
+  branchname           String?   @db.VarChar(35)
+  address              String?   @db.VarChar(50)
+  CompanyAcctNo        String?   @db.VarChar(20)
+  ContactMgrAccountant String?   @db.VarChar(25)
+  remarks              String?   @db.VarChar(30)
+  telephone            String?   @db.VarChar(50)
+  email                String?   @db.VarChar(50)
+  contact              String?   @db.VarChar(50)
+  createdby            String?   @db.VarChar(20)
+  datecreated          DateTime? @db.DateTime(0)
+  cbn_code             String?   @db.VarChar(20)
+  cbn_branch           String?   @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_bankvouchers {
+  work_station String?  @db.VarChar(20)
+  empno        String?  @db.VarChar(12)
+  surname      String?  @db.VarChar(30)
+  othername    String?  @db.VarChar(40)
+  title        String?  @db.VarChar(15)
+  bankname     String?  @db.VarChar(50)
+  bankbranch   String?  @db.VarChar(50)
+  acctno       String?  @db.VarChar(20)
+  net          Decimal? @db.Decimal(19, 4)
+  rec_count    Int?
+  class        String?  @db.VarChar(5)
+  cbn_bank     String?  @db.VarChar(20)
+  cbn_branch   String?  @db.VarChar(20)
+  gsm_number   String?  @db.VarChar(20)
+
+  @@ignore
+}
+
+model py_country {
+  countrycode  String  @id @db.VarChar(3)
+  Countryname  String? @db.VarChar(50)
+  Capital      String? @db.VarChar(50)
+  continent    String? @db.VarChar(30)
+  tel_code     String? @db.VarChar(15)
+  oflang1      String? @db.VarChar(20)
+  oflang2      String? @db.VarChar(20)
+  oflang3      String? @db.VarChar(20)
+  user_created String? @db.VarChar(20)
+  user         String? @db.VarChar(10)
+}
+
+model py_department {
+  factcode    String    @db.VarChar(10)
+  deptcode    String    @db.VarChar(10)
+  factname    String?   @db.VarChar(40)
+  deptname    String?   @db.VarChar(50)
+  coordcode   String?   @db.VarChar(40)
+  manager     String?   @db.VarChar(20)
+  hod         String?   @db.VarChar(20)
+  acct        String?   @db.VarChar(15)
+  misc1       String?   @db.VarChar(15)
+  misc2       String?   @db.VarChar(15)
+  misc3       String?   @db.VarChar(15)
+  AddressCode String?   @db.VarChar(10)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@id([factcode, deptcode])
+}
+
+model py_exittype {
+  Name        String @id @db.VarChar(5)
+  Description String @db.VarChar(50)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_factory {
+  factcode String  @db.VarChar(15)
+  name     String? @db.VarChar(25)
+  Address  String? @db.VarChar(40)
+  cmdcode  String? @db.VarChar(40)
+  user     String? @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_formfile {
+  formcode  String  @db.VarChar(6)
+  descr     String? @db.VarChar(30)
+  createdby String? @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_functiontype {
+  funct     String  @db.VarChar(3)
+  functdesc String? @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_grade {
+  Gradecode   String   @db.VarChar(4)
+  Description String?  @db.VarChar(17)
+  Category    String?  @db.VarChar(15)
+  MJV         Decimal? @db.Decimal(19, 4)
+  ENTITLEMENT Int?     @db.SmallInt
+  overtimeind String?  @db.VarChar(1)
+  user        String?  @db.VarChar(10)
+
+  @@ignore
+}
+
+model py_gradelevel {
+  grade_no   String  @id @db.VarChar(2)
+  grade_desc String  @db.VarChar(20)
+  No         String? @db.VarChar(2)
+}
+
+model py_maritalstatus {
+  MaritalCode   String  @id @db.VarChar(1)
+  MaritalStatus String? @db.VarChar(20)
+  user_created  String? @db.VarChar(20)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_mypayded {
+  Empl_ID     String?   @db.VarChar(20)
+  type        String    @db.VarChar(6)
+  mak1        String?   @db.VarChar(3)
+  amtp        Decimal?  @db.Decimal(19, 4)
+  mak2        String?   @db.VarChar(3)
+  amt         Decimal?  @db.Decimal(19, 4)
+  amtad       String?   @db.VarChar(6)
+  amttd       Decimal?  @db.Decimal(19, 4)
+  payind      String?   @db.VarChar(1)
+  nomth       Int?      @db.SmallInt
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+  batchName   String?   @db.VarChar(255)
+
+  @@index([Empl_ID, type], map: "idx_payded_emptype")
+  @@ignore
+}
+
+model py_navalcommand {
+  navalcmd String  @id @db.VarChar(30)
+  name     String? @db.VarChar(50)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_payaccess {
+  userid     String  @db.VarChar(20)
+  formcode   String  @db.VarChar(6)
+  descr      String? @db.VarChar(30)
+  accesscode String? @db.VarChar(3)
+  createdby  String? @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_paydesc {
+  paycode String  @db.VarChar(5)
+  paydesc String? @db.VarChar(12)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_payind {
+  ind     String  @db.VarChar(2)
+  inddesc String? @db.VarChar(17)
+
+  @@ignore
+}
+
+model py_paysystem {
+  Id            Int       @id @default(autoincrement())
+  comp_code     String?   @db.VarChar(50)
+  comp_name     String?   @db.VarChar(255)
+  Address       String?   @db.MediumText
+  Processyear   Int?
+  processmonth  Int?
+  datecreated   DateTime? @default(now()) @db.DateTime(0)
+  createdby     String?   @db.VarChar(100)
+  salaryscale   String?   @db.VarChar(50)
+  retireage     Int?
+  hrlink        String?   @db.VarChar(255)
+  town          String?   @db.VarChar(100)
+  lg            String?   @db.VarChar(100)
+  state         String?   @db.VarChar(100)
+  email         String?   @db.VarChar(255)
+  box           String?   @db.VarChar(100)
+  tel           String?   @db.VarChar(50)
+  serveraddr    String?   @db.VarChar(255)
+  serverport    String?   @db.VarChar(10)
+  email_pword   String?   @db.VarChar(255)
+  mthly_tax     String?   @db.VarChar(5)
+  runtype       String?   @db.VarChar(50)
+  company_image String?   @db.LongText
+  notes         String?   @db.MediumText
+
+  @@index([comp_code], map: "idx_comp_code")
+  @@index([Processyear], map: "idx_processyear")
+}
+
+model py_pfa {
+  pfacode    String  @id @db.VarChar(20)
+  pfadesc    String? @db.VarChar(40)
+  pfapfcname String? @db.VarChar(40)
+  pfapfc     String? @db.VarChar(20)
+}
+
+model py_relationship {
+  RShipcode    String  @id @db.VarChar(4)
+  Relationship String? @db.VarChar(35)
+}
+
+model py_religion {
+  ReligionCode String @id @db.VarChar(2)
+  ReligionName String @db.VarChar(30)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_salary {
+  Empl_ID String?   @db.VarChar(12)
+  date    DateTime? @db.DateTime(0)
+  sal     String?   @db.VarChar(50)
+  grade   Int?      @db.SmallInt
+  percent Int?
+  perf    String?   @db.VarChar(10)
+  annual  String?   @db.Text
+  user    String?   @db.VarChar(10)
+
+  @@ignore
+}
+
+model py_salarygroup {
+  groupcode  String    @id @db.VarChar(10)
+  effdate    String?   @db.VarChar(10)
+  lastdate   String?   @db.VarChar(10)
+  grpdesc    String?   @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([effdate], map: "idx_effdate")
+  @@index([lastdate], map: "idx_lastdate")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_salaryrecon {
+  rectype String? @db.VarChar(15)
+  recdesc String? @db.VarChar(30)
+
+  @@ignore
+}
+
+model py_salaryscale {
+  salcode String   @db.VarChar(10)
+  saltype String   @db.VarChar(6)
+  grade   String   @db.VarChar(2)
+  step1   Decimal? @db.Decimal(19, 4)
+  step2   Decimal? @db.Decimal(19, 4)
+  step3   Decimal? @db.Decimal(19, 4)
+  step4   Decimal? @db.Decimal(19, 4)
+  step5   Decimal? @db.Decimal(19, 4)
+  step6   Decimal? @db.Decimal(19, 4)
+  step7   Decimal? @db.Decimal(19, 4)
+  step8   Decimal? @db.Decimal(19, 4)
+  step9   Decimal? @db.Decimal(19, 4)
+  step10  Decimal? @db.Decimal(19, 4)
+  step11  Decimal? @db.Decimal(19, 4)
+  step12  Decimal? @db.Decimal(19, 4)
+  step13  Decimal? @db.Decimal(19, 4)
+  step14  Decimal? @db.Decimal(19, 4)
+  step15  Decimal? @db.Decimal(19, 4)
+  step16  Decimal? @db.Decimal(19, 4)
+  step17  Decimal? @db.Decimal(19, 4)
+  step18  Decimal? @db.Decimal(19, 4)
+  step19  Decimal? @db.Decimal(19, 4)
+  step20  Decimal? @db.Decimal(19, 4)
+  user    String?  @db.VarChar(10)
+
+  @@id([salcode, saltype, grade])
+  @@index([salcode, saltype, grade], map: "idx_salaryscale_lookup")
+}
+
+model py_sex {
+  sex_code String @id @db.VarChar(1)
+  sex_desc String @db.VarChar(10)
+}
+
+model py_specialisationarea {
+  sp_desc String @id @db.VarChar(50)
+}
+
+model py_status {
+  StatusCode    String  @id @db.VarChar(1)
+  StatusDescrip String? @db.VarChar(16)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_tbllga {
+  Lgcode      String?   @db.VarChar(3)
+  Lgname      String?   @db.VarChar(20)
+  Lghqs       String?   @db.VarChar(30)
+  Statecode   String?   @db.VarChar(3)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @db.DateTime(0)
+
+  @@ignore
+}
+
+model py_tblstates {
+  Statecode    String    @id @db.VarChar(3)
+  Statename    String?   @db.VarChar(15)
+  Statecapital String?   @db.VarChar(15)
+  createdby    String?   @db.VarChar(20)
+  datecreated  DateTime? @db.DateTime(0)
+  geoZone      String?   @db.VarChar(30)
+}
+
+model py_title {
+  Titlecode    String  @id @db.VarChar(15)
+  Description  String? @db.VarChar(30)
+  user_created String? @db.VarChar(20)
+  user         String? @db.VarChar(10)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model py_totalemolument {
+  title         String   @db.VarChar(20)
+  tot_emolument Decimal? @db.Decimal(19, 4)
+
+  @@ignore
+}
+
+model py_webpayregister {
+  id           Int      @id @default(autoincrement())
+  work_station String   @db.VarChar(50)
+  period       String   @db.VarChar(6)
+  payclass     String   @db.VarChar(2)
+  serviceno    String   @db.VarChar(15)
+  title        String?  @db.VarChar(20)
+  fullname     String?  @db.VarChar(100)
+  gradelevel   String?  @db.VarChar(10)
+  deptname     String?  @db.VarChar(100)
+  factname     String?  @db.VarChar(100)
+  his_type     String   @db.VarChar(10)
+  description  String?  @db.VarChar(30)
+  bpc          String?  @db.VarChar(2)
+  bpa          String?  @db.VarChar(25)
+  source       String?  @db.VarChar(5)
+  amount       Decimal? @default(0.00) @db.Decimal(15, 2)
+  col_order    Int?     @default(0)
+
+  @@index([col_order], map: "idx_reg_colorder")
+  @@index([serviceno], map: "idx_reg_emp")
+  @@index([work_station, period, payclass], map: "idx_reg_lookup")
+  @@index([his_type], map: "idx_reg_type")
+}
+
+model py_webpayregister_cols {
+  id           Int     @id @default(autoincrement())
+  work_station String  @db.VarChar(50)
+  period       String  @db.VarChar(6)
+  payclass     String  @db.VarChar(2)
+  his_type     String  @db.VarChar(10)
+  description  String? @db.VarChar(30)
+  bpc          String? @db.VarChar(2)
+  bpa          String? @db.VarChar(25)
+  col_order    Int?    @default(0)
+
+  @@index([work_station, period, payclass], map: "idx_cols_lookup")
+  @@index([col_order], map: "idx_cols_order")
+}
+
+model py_websalaryhistory {
+  id           Int       @id @default(autoincrement())
+  work_station String    @db.VarChar(50)
+  numb         String    @db.VarChar(15)
+  surname      String?   @default("") @db.VarChar(50)
+  othername    String?   @default("") @db.VarChar(50)
+  payclass     String?   @default("") @db.VarChar(2)
+  his_type     String    @db.VarChar(10)
+  description  String?   @default("") @db.VarChar(30)
+  bpc          String?   @default("") @db.VarChar(2)
+  bpa          String?   @default("") @db.VarChar(25)
+  source       String?   @default("") @db.VarChar(5)
+  fromperiod   String    @db.VarChar(6)
+  toperiod     String    @db.VarChar(6)
+  period1      String?   @default("") @db.VarChar(6)
+  amt1         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period2      String?   @default("") @db.VarChar(6)
+  amt2         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period3      String?   @default("") @db.VarChar(6)
+  amt3         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period4      String?   @default("") @db.VarChar(6)
+  amt4         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period5      String?   @default("") @db.VarChar(6)
+  amt5         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period6      String?   @default("") @db.VarChar(6)
+  amt6         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period7      String?   @default("") @db.VarChar(6)
+  amt7         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period8      String?   @default("") @db.VarChar(6)
+  amt8         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period9      String?   @default("") @db.VarChar(6)
+  amt9         Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period10     String?   @default("") @db.VarChar(6)
+  amt10        Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period11     String?   @default("") @db.VarChar(6)
+  amt11        Decimal?  @default(0.00) @db.Decimal(15, 2)
+  period12     String?   @default("") @db.VarChar(6)
+  amt12        Decimal?  @default(0.00) @db.Decimal(15, 2)
+  generated_at DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([work_station, numb], map: "idx_wsh_station_numb")
+  @@index([work_station, fromperiod, toperiod], map: "idx_wsh_station_range")
+}
+
+model role_menu_permissions {
+  id           Int        @id @default(autoincrement())
+  role_id      Int
+  menu_item_id Int
+  created_at   DateTime?  @default(now()) @db.Timestamp(0)
+  roles        roles      @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_menu_permissions_ibfk_1")
+  menu_items   menu_items @relation(fields: [menu_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_menu_permissions_ibfk_2")
+
+  @@unique([role_id, menu_item_id], map: "unique_role_menu")
+  @@index([menu_item_id], map: "idx_menu")
+  @@index([role_id], map: "idx_role")
+}
+
+model spouse {
+  spouse_id   Int       @id @default(autoincrement())
+  Empl_ID     String    @db.VarChar(12)
+  spname      String?   @db.VarChar(100)
+  spstreet    String?   @db.VarChar(100)
+  sptown      String?   @db.VarChar(50)
+  Lgcode      String?   @db.VarChar(10)
+  Statecode   String?   @db.VarChar(10)
+  spphone     String?   @db.VarChar(20)
+  spemail     String?   @db.VarChar(50)
+  sppobox     String?   @db.VarChar(20)
+  spactive    Boolean?  @default(true)
+  createdby   String?   @db.VarChar(20)
+  datecreated DateTime? @default(now()) @db.DateTime(0)
+  Modifydate  DateTime? @db.DateTime(0)
+  ModifyBy    String?   @db.VarChar(20)
+  dateofbirth DateTime? @db.Date
+  marrieddate DateTime? @db.Date
+
+  @@index([spactive], map: "idx_spouse_active")
+  @@index([Empl_ID], map: "idx_spouse_empl")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model storage_configs {
+  id                 Int                                @id @default(autoincrement())
+  name               String                             @unique(map: "name") @db.VarChar(255)
+  type               storage_configs_type
+  configuration      String                             @db.LongText
+  is_active          Boolean?                           @default(true)
+  test_connection_at DateTime?                          @db.Timestamp(0)
+  connection_status  storage_configs_connection_status? @default(unknown)
+  created_at         DateTime?                          @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?                          @default(now()) @db.Timestamp(0)
+
+  @@index([is_active], map: "idx_is_active")
+  @@index([type], map: "idx_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model system_logs {
+  id         Int               @id @default(autoincrement())
+  level      system_logs_level
+  category   String            @db.VarChar(100)
+  message    String            @db.Text
+  context    String?           @db.LongText
+  user_id    String?           @db.VarChar(100)
+  ip_address String?           @db.VarChar(45)
+  created_at DateTime?         @default(now()) @db.Timestamp(0)
+
+  @@index([category], map: "idx_category")
+  @@index([created_at], map: "idx_created_at")
+  @@index([level], map: "idx_level")
+}
+
+model system_settings {
+  id            Int                           @id @default(autoincrement())
+  setting_key   String                        @unique(map: "setting_key") @db.VarChar(255)
+  setting_value String?                       @db.Text
+  setting_type  system_settings_setting_type? @default(string)
+  description   String?                       @db.Text
+  is_editable   Boolean?                      @default(true)
+  created_at    DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?                     @default(now()) @db.Timestamp(0)
+
+  @@index([setting_key], map: "idx_setting_key")
+}
+
+model user_mails {
+  id                  Int                @id @default(autoincrement())
+  batch_id            String?            @db.VarChar(36)
+  from_user_id        String             @db.VarChar(50)
+  from_name           String             @db.VarChar(150)
+  from_email          String             @default("") @db.VarChar(150)
+  to_user_id          String             @db.VarChar(50)
+  to_name             String             @db.VarChar(150)
+  to_email            String?            @db.VarChar(50)
+  subject             String             @db.VarChar(255)
+  body                String             @db.Text
+  is_read             Int                @default(0) @db.TinyInt
+  sent_at             DateTime           @default(now()) @db.DateTime(0)
+  delivered_at        DateTime?          @db.Timestamp(0)
+  read_at             DateTime?          @db.Timestamp(0)
+  deleted_by_sender   Boolean?           @default(false)
+  deleted_by_receiver Boolean?           @default(false)
+  is_notification     Boolean?           @default(false)
+  mail_attachments    mail_attachments[]
+
+  @@index([from_user_id, sent_at], map: "idx_from_user")
+  @@index([sent_at], map: "idx_sent_at")
+  @@index([to_user_id, is_read, sent_at], map: "idx_to_user")
+  @@index([batch_id], map: "idx_user_mails_batch_id")
+  @@index([from_user_id, sent_at(sort: Desc)], map: "idx_user_mails_from_sent")
+  @@index([read_at], map: "idx_user_mails_read_at")
+}
+
+model users {
+  user_id       String        @id @db.VarChar(50)
+  full_name     String        @db.VarChar(100)
+  email         String        @unique(map: "email") @db.VarChar(150)
+  user_role     String        @db.VarChar(50)
+  status        users_status? @default(active)
+  phone_number  String?       @db.VarChar(20)
+  token         String?       @db.LongText
+  expiry_date   DateTime?     @db.Date
+  primary_class String        @default("hicaddata") @db.VarChar(50)
+  created_at    DateTime?     @default(now()) @db.Timestamp(0)
+}
+
+enum backup_configs_backup_type {
+  full
+  structure
+  data
+}
+
+enum py_payrollclass_status {
+  active
+  inactive
+}
+
+enum backup_configs_storage_type {
+  local
+  ftp
+  cloud
+}
+
+enum backup_configs_schedule_type {
+  manual
+  daily
+  weekly
+  monthly
+}
+
+enum backup_history_status {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum database_connections_connection_status {
+  unknown
+  success
+  failed
+}
+
+enum system_logs_level {
+  debug
+  info
+  warning
+  error
+  critical
+}
+
+enum ef_allowances_allow_type {
+  AIRCREW
+  PILOT
+  SHIFT_DUTY
+  HAZARD
+  RENT_SUBSIDY
+  SBC
+  SPECIAL_FORCES
+  CALL_DUTY
+  OTHER
+}
+
+enum ef_audit_logs_action {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+enum ef_documents_doc_type {
+  PASSPORT
+  NOK_PASSPORT
+  ALT_NOK_PASSPORT
+}
+
+enum ef_loans_loan_type {
+  FGSHLS
+  CAR
+  WELFARE
+  NNNCS
+  NNMFBL
+  PPCFS
+  OTHER
+}
+
+enum ef_user_roles_role {
+  DO
+  FO
+  CPO
+  EMOL_ADMIN
+}
+
+enum storage_configs_type {
+  local
+  ftp
+  sftp
+  aws_s3       @map("aws-s3")
+  google_cloud @map("google-cloud")
+  azure_blob   @map("azure-blob")
+}
+
+enum ef_user_roles_scope_type {
+  SHIP
+  COMMAND
+  GLOBAL
+}
+
+enum ef_users_role {
+  PERSONNEL
+  DO
+  FO
+  CPO
+  ADMIN
+  SHIP_OFFICER
+}
+
+enum py_process_control_status {
+  PENDING
+  BACKED_UP
+  EXTRACTED
+  UPDATED
+  CALCULATED
+  APPROVED
+  PROCESSED
+  ROLLED_BACK
+  NO_RECORDS
+  FAILED
+}
+
+enum system_settings_setting_type {
+  string
+  number
+  boolean
+  json
+}
+
+enum users_status {
+  active
+  inactive
+  suspended
+}
+
+enum menu_items_menu_type {
+  menu
+  item
+  submenu
+}
+
+enum py_process_log_status {
+  STARTED
+  SUCCESS
+  FAILED
+}
+
+enum storage_configs_connection_status {
+  unknown
+  success
+  failed
+}
+
+enum ef_emolument_forms_status {
+  DRAFT
+  SUBMITTED
+  DO_REVIEWED
+  FO_APPROVED
+  CPO_CONFIRMED
+  REJECTED
+}
+
+enum py_performance_log_status {
+  SUCCESS
+  FAILED
+  PARTIAL
+}
