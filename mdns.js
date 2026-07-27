@@ -132,44 +132,6 @@ function parseQuestion(msg) {
   }
 }
 
-// ── Join the multicast group on EVERY LAN interface ───────
-// socket.addMembership(addr) with no second argument only joins on
-// whichever interface the OS treats as the default route — on a
-// dual-homed machine (e.g. Ethernet intranet + Wi-Fi internet) that's
-// almost always the Wi-Fi side, since that's where the default gateway
-// lives. Queries arriving on Ethernet would then never reach this
-// socket at all. Joining explicitly per-interface fixes that.
-function joinAllInterfaces(socket, ips) {
-  for (const ip of ips) {
-    try {
-      socket.addMembership(MDNS_ADDR, ip);
-      console.log(`[OK] Joined multicast group on ${ip}`);
-    } catch (err) {
-      // Can happen on virtual/loopback-like adapters that don't
-      // support multicast — safe to skip, not fatal.
-      console.warn(`⚠️  Could not join multicast on ${ip}: ${err.message}`);
-    }
-  }
-}
-
-// ── Send a response out of a SPECIFIC interface ───────────
-// Looping IPs into the DNS payload alone doesn't change which network
-// card the UDP packet actually leaves through — that's controlled
-// separately by setMulticastInterface(). Both need to be set per-IP
-// for replies to actually reach clients on every segment.
-function sendOn(socket, ip, id) {
-  try {
-    socket.setMulticastInterface(ip);
-  } catch (err) {
-    console.warn(`⚠️  Could not set multicast interface ${ip}: ${err.message}`);
-    return;
-  }
-  const response = buildResponse(DOMAIN, ip, id);
-  socket.send(response, 0, response.length, MDNS_PORT, MDNS_ADDR, (err) => {
-    if (err) console.error(`❌ Send error (${ip}):`, err.message);
-  });
-}
-
 // ── Main ──────────────────────────────────────────────────
 console.log("Navy Payroll — mDNS Responder");
 console.log("==============================");
@@ -204,36 +166,22 @@ socket.on("message", (msg, rinfo) => {
     `[${new Date().toISOString()}] Query from ${rinfo.address} for ${q.name} → responding with ${ips.join(", ")}`,
   );
 
-  // One packet, all A records — see buildResponse for why.
-  const response = buildResponse(DOMAIN, ips, q.id);
-  socket.send(response, 0, response.length, MDNS_PORT, MDNS_ADDR, (err) => {
-    if (err) console.error('❌ Send error:', err.message);
-  });
+  // Send one response per IP (covers WiFi + Ethernet simultaneously)
+  for (const ip of ips) {
+    const response = buildResponse(DOMAIN, ip, q.id);
+    socket.send(response, 0, response.length, MDNS_PORT, MDNS_ADDR, (err) => {
+      if (err) console.error(`❌ Send error (${ip}):`, err.message);
+    });
+  }
 });
 
 socket.bind(MDNS_PORT, () => {
-  // Join the multicast group on EVERY LAN interface, not just the default
-  // one. With multiple NICs, joining only the default interface means
-  // queries arriving on the other NIC (or after the default route changes
-  // when internet connects) are never heard.
-  const lanIfaces = getLanInterfaces();
-  if (lanIfaces.length === 0) {
-    try { socket.addMembership(MDNS_ADDR); } catch (e) {
-      console.warn('⚠️  addMembership (default) failed:', e.message);
-    }
-  } else {
-    for (const { address } of lanIfaces) {
-      try { socket.addMembership(MDNS_ADDR, address); } catch (e) {
-        console.warn(`⚠️  addMembership on ${address} failed:`, e.message);
-      }
-    }
-  }
+  socket.addMembership(MDNS_ADDR);
   socket.setMulticastTTL(255);
   socket.setMulticastLoopback(true);
 
   const ips = getLanIPs();
   console.log(`LAN IPs : ${ips.join(", ") || "none found"}`);
-  joinAllInterfaces(socket, ips);
   console.log(`Listening on ${MDNS_ADDR}:${MDNS_PORT}`);
   console.log("");
   console.log("Clients can now reach the server at:");
@@ -246,11 +194,12 @@ socket.bind(MDNS_PORT, () => {
 // ── Announce presence on startup (unsolicited response) ───
 socket.on("listening", () => {
   const ips = getLanIPs();
-  if (ips.length === 0) return;
-  const announcement = buildResponse(DOMAIN, ips);
-  setTimeout(() => {
-    socket.send(announcement, 0, announcement.length, MDNS_PORT, MDNS_ADDR);
-  }, 1000); // slight delay to let socket fully initialize
+  for (const ip of ips) {
+    const announcement = buildResponse(DOMAIN, ip);
+    setTimeout(() => {
+      socket.send(announcement, 0, announcement.length, MDNS_PORT, MDNS_ADDR);
+    }, 1000); // slight delay to let socket fully initialize
+  }
 });
 
 process.on("SIGINT", () => {
