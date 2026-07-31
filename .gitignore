@@ -97,3 +97,7 @@ build-db-doc.js
 db-doc-helpers.js
 routes/user-dashboard/emolument/system/system.service.js
 schema.html
+scripts/migratePasswords.backup.2026-07-30T20-19-41-251Z.csv
+scripts/migratePasswords.duplicates.csv
+scripts/migratePasswords.junkkeys.csv
+scripts/migratePasswords.unmatched.csv
