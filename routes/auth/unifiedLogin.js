@@ -52,6 +52,12 @@ const pool = require("../../config/db");
 const config = require("../../config");
 const EmailProvider = require("../../providers/email");
 const { applyReplacements } = require("../../utils/email_helper");
+const {
+  detectFormat,
+  hashPassword,
+  verifyHashed,
+  recomputeLikeStored,
+} = require("../../utils/legacyPassword");
 
 const SECRET = config.jwt.secret;
 const OFFICERS_DB = () => process.env.DB_OFFICERS || config.databases.officers;
@@ -67,7 +73,6 @@ if (!SECRET) throw new Error("JWT_SECRET not set");
 // Payroll admins additionally call POST /api/users/login for class.
 // ─────────────────────────────────────────────────────────────
 router.post("/pre-login", async (req, res) => {
-  console.log(process.env.BASE_URL, "base url");
   const user_id = (req.body.user_id || "").trim();
   const password = (req.body.password || "").trim();
 
@@ -93,6 +98,7 @@ router.post("/pre-login", async (req, res) => {
     );
 
     if (!empRows.length) {
+
       return res
         .status(401)
         .json({ error: "Invalid Service Number or password" });
@@ -101,44 +107,89 @@ router.post("/pre-login", async (req, res) => {
     const emp = empRows[0];
 
     if (emp.exittype && emp.exittype.trim() !== "") {
+
       return res
         .status(403)
         .json({ error: "Account deactivated. Contact administrator." });
     }
 
     if (emp.force_change || emp.force_change === 1) {
+
       return res.status(401).json({
         error: "Use the 'First Time?' option to change your password.",
       });
     }
 
     if (!emp.password) {
+
       return res
         .status(401)
         .json({ error: "Invalid Service Number or password" });
+    }
+
+    // ── Detect how the migrated password is stored ───────────
+    // argon2 -> verify natively; md5/identity(PBKDF2) -> verify then rehash;
+    // plaintext -> untrusted, push the user into the first-time change flow.
+    const storedFormat = detectFormat(emp.password);
+
+
+    if (storedFormat === "plaintext") {
+   
+      // Flag it so the existing force_change gate catches them next time too.
+      await pool.query(
+        "UPDATE hr_employees SET force_change = 1 WHERE Empl_ID = ?",
+        [user_id],
+      );
+      return res.status(401).json({
+        error: "Use the 'First Time?' option to change your password.",
+      });
+    }
+
+    // ── DEBUG: recompute the typed password with the SAME technique as the
+    //    stored value and print both, so you can compare/contrast directly.
+    try {
+     await recomputeLikeStored(password, emp.password);
+    
+    } catch (dbgErr) {
+      console.error(`[pre-login] ${user_id}: compare-debug failed:`, dbgErr);
     }
 
     let passwordValid = false;
+    let needsRehash = false;
     try {
-      passwordValid = await argon.verify(emp.password, password);
-      console.log("password valid");
+      const result = await verifyHashed(password, emp.password);
+      passwordValid = result.ok;
+      needsRehash = result.needsRehash;
     } catch (err) {
-      console.error("Argon verify error:", err);
+      console.error(`[pre-login] ${user_id}: verify threw:`, err);
       return res
         .status(401)
         .json({ error: "Invalid Service Number or Password" });
     }
 
     if (!passwordValid) {
+     
       return res
         .status(401)
         .json({ error: "Invalid Service Number or Password" });
     }
 
-    if (!passwordValid) {
-      return res
-        .status(401)
-        .json({ error: "Invalid Service Number or password" });
+  
+
+    // ── Verify-and-rehash: upgrade a verified legacy (md5/PBKDF2) hash to
+    //    argon2 in place. Transparent to the user; runs once per account.
+    if (needsRehash) {
+      try {
+        const upgraded = await hashPassword(password);
+        await pool.query(
+          "UPDATE hr_employees SET password = ?, password_changed_at = NOW() WHERE Empl_ID = ?",
+          [upgraded, user_id],
+        );
+
+      } catch (err) {
+        // Non-fatal: the user still authenticated. Log and continue.
+        console.error(`Rehash failed for ${user_id}:`, err);
+      }
     }
 
     // ── 2. Resolve capabilities (3 parallel queries) ─────────
