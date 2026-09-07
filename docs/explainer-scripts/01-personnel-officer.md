@@ -121,7 +121,9 @@
 
 The Nigerian Navy E-Emolument system is where you record the personal, family and financial details that your pay is calculated from. In this short video you will see how to fill your form, save it, and submit it for approval.
 
-Sign in with your service number and password. You land on your personal dashboard. At the top you will see your name and rank. Below that is your progress tracker, showing five stages: Draft, Submitted, DO Review, FO Approval and CPO Confirm. The highlighted stage tells you exactly where your form has reached. On the left is your menu: Dashboard, My Form, Progress, History, and Ticket.
+Sign in with your service number and password. You land on your personal dashboard. Use the navigation bar at the top of yoour screen to navigate to the emolument screen. 
+
+At the top you will see your name and rank. Below that is your progress tracker, showing five stages: Draft, Submitted, DO Review, FO Approval and CPO Confirm. The highlighted stage tells you exactly where your form has reached. On the left is your menu: Dashboard, My Form, Progress, History, and Ticket.
 
 Select My Form to see a summary of what is currently on file, then open the full form to make changes. The form adjusts itself to you. If you are an officer, you will see commissioning fields. If you are a rating, you will see advancement and seniority fields instead. Trainees see their own version. You will never be asked for something that does not apply to you.
 
@@ -141,4 +143,4 @@ Once submitted, your form locks. You can still view and download it, but you can
 
 If you are stuck, use Ticket. Choose your issue — wrong personal data on file, a form you cannot edit, an approval status that is not updating, or something else — describe it, and submit. The administrator's reply appears under My Tickets. History keeps every form you have submitted in previous years, so you always have the record.
 
-Fill it carefully, check your account numbers, and submit before your ship's form window closes. Accurate details mean accurate pay.
+Fill it carefully, check your account numbers, and submit before your ship's form window closes.
