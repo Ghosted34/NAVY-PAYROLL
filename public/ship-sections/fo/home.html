@@ -78,10 +78,7 @@
         </div>
       </div>
       <button
-        onclick="
-          if (typeof showShipSection === 'function')
-            showShipSection('pending', null);
-        "
+        onclick="if (window.shipNav) window.shipNav.navigate('pending');"
         class="px-4 py-2 bg-navy text-white text-sm font-bold rounded-lg cursor-pointer border-none hover:bg-blue-800 transition-colors flex-shrink-0"
       >
         Approve

@@ -481,6 +481,21 @@
         };
 
         // ═══════════════════════════════════════════════════════
+        // ROLE NORMALIZATION
+        // The ship dashboard keys its menus off DO/FO/CPO. Other parts of the
+        // app (the emolument form viewer) speak EMOL_DO/EMOL_FO/EMOL_CPO.
+        // Normalize on read so a stray EMOL_* value can never leave the
+        // dashboard with an empty menu (which rendered a blank shell).
+        // ═══════════════════════════════════════════════════════
+        const VALID_SHIP_ROLES = ["DO", "FO", "CPO"];
+
+        function normalizeShipRole(raw) {
+          if (!raw) return null;
+          const clean = String(raw).trim().toUpperCase().replace(/^EMOL_/, "");
+          return VALID_SHIP_ROLES.includes(clean) ? clean : null;
+        }
+
+        // ═══════════════════════════════════════════════════════
         // SHIP NAVIGATION SYSTEM
         // ═══════════════════════════════════════════════════════
         class ShipNav {
@@ -532,7 +547,26 @@
 
           init(shipName, role, scopeType) {
             const newShip = shipName || sessionStorage.getItem("active_ship") || "—";
-            const newRole = role || sessionStorage.getItem("active_ship_role") || "DO";
+            const rawRole = role || sessionStorage.getItem("active_ship_role");
+            let newRole = normalizeShipRole(rawRole);
+            if (!newRole) {
+              // Unknown/corrupted role — degrade to a usable dashboard instead of
+              // rendering an empty shell, and repair the stored value.
+              newRole = normalizeShipRole(this.currentRole) || "DO";
+              if (rawRole) {
+                console.warn(
+                  "[ShipNav] Unrecognised ship role " +
+                    JSON.stringify(rawRole) +
+                    " — falling back to " +
+                    newRole,
+                );
+              }
+            }
+            // Heal the stored value, but only while a ship is actually active —
+            // the boot-time init() call must not seed a role for no ship.
+            if (newShip && newShip !== "—" && rawRole !== newRole) {
+              sessionStorage.setItem("active_ship_role", newRole);
+            }
             const newScope = scopeType || sessionStorage.getItem("active_ship_scope") || "SHIP";
             const sameShipRole = this.currentShip === newShip && this.currentRole === newRole;
 

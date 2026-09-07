@@ -372,7 +372,7 @@ async function approveBulk(
 
     if (affected.length === 0) return { count: 0, serviceNumbers: [] };
 
-    const serviceNumbers = affected.map((r) => r.serviceNumber);
+    const serviceNumbers = affected.map((r) => r.service_no);
     const svcPlaceholders = serviceNumbers.map(() => "?").join(",");
 
     // 2. Bulk update ef_personalinfos
