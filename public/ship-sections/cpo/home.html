@@ -53,7 +53,7 @@
         <div class="text-xs text-blue-900/40 mt-0.5">FO-approved forms pending your final confirmation</div>
       </div>
       <button
-        onclick="if (typeof showShipSection === 'function') showShipSection('pending', null);"
+        onclick="if (window.shipNav) window.shipNav.navigate('pending');"
         class="px-4 py-2 bg-navy text-white text-sm font-bold rounded-lg cursor-pointer border-none hover:bg-blue-800 transition-colors flex-shrink-0"
       >
         Confirm <i class="fas fa-chevron-right ml-1" style="font-size:11px"></i>

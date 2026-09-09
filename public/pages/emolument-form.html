@@ -1635,7 +1635,7 @@
         serviceNumber: data.serviceNumber,
         Surname: data.Surname,
         OtherName: data.OtherName,
-        Rank: data.Rank,
+        Rank: data.Rank.toUpperCase(),
         NIN: data.NIN,
         MaritalStatus: data.MaritalStatus,
         Birthdate: toDateStr(data.Birthdate),
@@ -1643,7 +1643,7 @@
         gsm_number: data.gsm_number,
         gsm_number2: data.gsm_number2,
         email: data.email,
-        home_address: data.home_address,
+        home_address: data.AddressofAcommodation,
         DateEmpl: toDateStr(data.DateEmpl),
         expirationOfEngagementDate: toDateStr(
           data.expirationOfEngagementDate,
@@ -2036,7 +2036,7 @@
         "Birthdate",
         "gsm_number",
         "home_address",
-        "BankACNumber",
+        // "BankACNumber",
         // "Bankcode",
         // "BankBranch",
         "nok_primary_full_name",
@@ -2490,6 +2490,7 @@
           setTimeout(() => {
             sessionStorage.removeItem("emolument_form_return_page");
             sessionStorage.removeItem("active_form_id");
+            sessionStorage.removeItem("active_form_role");
             goBack();
           }, 1000);
         })
@@ -2524,7 +2525,16 @@
       const params = new URLSearchParams(location.search);
       const mode = params.get("mode");
 
-      let role = sessionStorage.getItem("active_ship_role");
+      // The form viewer keys off the EMOL_* role vocabulary, written by
+      // viewForm() into active_form_role. Fall back to the ship dashboard's
+      // DO/FO/CPO key (normalized) for older sessions.
+      let role = sessionStorage.getItem("active_form_role");
+      if (!role) {
+        const shipRole = sessionStorage.getItem("active_ship_role");
+        if (shipRole) {
+          role = shipRole.startsWith("EMOL_") ? shipRole : "EMOL_" + shipRole;
+        }
+      }
       if (mode === "admin-verify") role = "EMOL_ADMIN";
       if (mode === "do-review") role = "EMOL_DO";
       if (mode === "fo-approve") role = "EMOL_FO";

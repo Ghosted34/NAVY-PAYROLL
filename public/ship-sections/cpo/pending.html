@@ -234,7 +234,10 @@ ${paginatorHTML(page, Math.ceil(total / CPO_CONFIRMED_PAGE_SIZE), "cpoPending")}
 
   function viewForm(svcno, role) {
     sessionStorage.setItem("emolument_form_return_page", "ship-dashboard");
-    sessionStorage.setItem("active_ship_role", role);
+    // NOTE: the form viewer uses the EMOL_* role vocabulary; the ship dashboard
+    // uses DO/FO/CPO. Keep them in separate keys so viewing a form cannot
+    // corrupt the ship dashboard's role on refresh.
+    sessionStorage.setItem("active_form_role", role);
     sessionStorage.setItem("emolument_form_svcno", svcno);
     window.location.href =
       "../../pages/emolument-form.html?svcno=" +
