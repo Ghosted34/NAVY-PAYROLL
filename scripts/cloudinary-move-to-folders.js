@@ -13,6 +13,9 @@
 //   node scripts/cloudinary-move-to-folders.js --apply --wait   keep going: wait out
 //                                                               the hourly limit, then continue
 //
+// Only images sitting in Home (no folder) are moved; an image someone already put
+// in another folder is listed and left alone. Failures are written to
+// cloudinary-move-failed.json next to where you run it.
 // Safe to run again: images already in the right folder are skipped. If
 // Cloudinary's hourly API limit is reached it stops; run it again later.
 // Needs CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET.
@@ -28,6 +31,11 @@ const APPLY = process.argv.includes("--apply");
 const PREFIX = arg("--prefix") || "emolument/";
 const WAIT = process.argv.includes("--wait");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const FAILED_FILE = "cloudinary-move-failed.json";
+let resetAt = null; // when Cloudinary's hourly allowance resets (from API responses)
+const noteLimit = (res) => {
+  if (res && res.rate_limit_reset_at) resetAt = new Date(res.rate_limit_reset_at);
+};
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -56,28 +64,36 @@ async function main() {
       max_results: 500,
       next_cursor: cursor,
     });
+    noteLimit(page);
     all.push(...page.resources);
     cursor = page.next_cursor;
     if (page.rate_limit_remaining != null) process.stdout.write(`  listed ${all.length} (API calls left this hour: ${page.rate_limit_remaining})\r`);
   } while (cursor);
   console.log(`\n${all.length} image(s) found.`);
 
-  const todo = all.filter((r) => (r.asset_folder || "") !== folderFor(r.public_id));
+  const wrong = all.filter((r) => (r.asset_folder || "") !== folderFor(r.public_id));
+  const elsewhere = wrong.filter((r) => (r.asset_folder || "") !== "");
+  const todo = wrong.filter((r) => (r.asset_folder || "") === "" && folderFor(r.public_id) !== "");
+  if (elsewhere.length) {
+    console.log(`${elsewhere.length} image(s) are in another folder (not Home) and are left alone, e.g.:`);
+    for (const r of elsewhere.slice(0, 10)) console.log(`  ${r.public_id}  (in ${r.asset_folder})`);
+  }
   const byFolder = {};
   for (const r of todo) {
     const k = `${r.asset_folder || "(Home)"}  ->  ${folderFor(r.public_id)}`;
     byFolder[k] = (byFolder[k] || 0) + 1;
   }
-  console.log(`${all.length - todo.length} already in the right folder, ${todo.length} to move:`);
+  console.log(`${all.length - wrong.length} already in the right folder, ${todo.length} to move from Home:`);
   for (const [k, n] of Object.entries(byFolder)) console.log(`  ${n}  ${k}`);
   if (!APPLY || !todo.length) return;
 
   // 2. move (one API call per image)
   let moved = 0, failed = 0, stopped = false;
+  const failures = [];
   for (let i = 0; i < todo.length && !stopped; i++) {
     const r = todo[i];
     try {
-      await cloudinary.api.update(r.public_id, { resource_type: "image", type: "upload", asset_folder: folderFor(r.public_id) });
+      noteLimit(await cloudinary.api.update(r.public_id, { resource_type: "image", type: "upload", asset_folder: folderFor(r.public_id) }));
       moved++;
       if (moved % 100 === 0) console.log(`  ${new Date().toLocaleTimeString()}  moved ${moved} / ${todo.length}`);
     } catch (e) {
@@ -86,15 +102,24 @@ async function main() {
           console.log(`\nCloudinary's hourly API limit reached after ${moved}. Run the same command again later to continue.`);
           stopped = true;
         } else {
-          console.log(`  ${new Date().toLocaleTimeString()}  hourly limit reached (${moved} moved so far); waiting 10 minutes`);
-          await sleep(10 * 60 * 1000);
+          // wait until the allowance resets (plus a minute), or 10 minutes if unknown
+          const ms = resetAt && resetAt > new Date() ? resetAt - new Date() + 60 * 1000 : 10 * 60 * 1000;
+          console.log(`  ${new Date().toLocaleTimeString()}  hourly limit reached (${moved} moved so far); waiting ${Math.round(ms / 60000)} min`);
+          await sleep(ms);
+          resetAt = null;
           i--; // try the same image again
         }
         continue;
       }
       failed++;
-      console.log(`  ${r.public_id}: ${e.message || (e.error && e.error.message)}`);
+      const msg = e.message || (e.error && e.error.message);
+      failures.push({ public_id: r.public_id, folder: folderFor(r.public_id), error: msg });
+      console.log(`  ${r.public_id}: ${msg}`);
     }
+  }
+  if (failures.length) {
+    require("fs").writeFileSync(FAILED_FILE, JSON.stringify(failures, null, 2));
+    console.log(`Failed images written to ${FAILED_FILE}; running the command again retries them.`);
   }
   console.log(`\nMoved ${moved}, errors ${failed}, left ${todo.length - moved - failed}.`);
 }
