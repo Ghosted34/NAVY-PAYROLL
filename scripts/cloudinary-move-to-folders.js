@@ -12,6 +12,10 @@
 //   node scripts/cloudinary-move-to-folders.js --prefix emolument/pass --apply
 //   node scripts/cloudinary-move-to-folders.js --apply --wait   keep going: wait out
 //                                                               the hourly limit, then continue
+//   node scripts/cloudinary-move-to-folders.js --apply --method explicit --limit 5
+//        try the faster way on 5 images: the Upload API "explicit" call, which is not
+//        under the Admin API's hourly limit and runs 5 at a time. Check them in the
+//        Media Library, then run without --limit.
 //
 // Only images sitting in Home (no folder) are moved; an image someone already put
 // in another folder is listed and left alone. Failures are written to
@@ -30,6 +34,9 @@ const arg = (n) => {
 const APPLY = process.argv.includes("--apply");
 const PREFIX = arg("--prefix") || "emolument/";
 const WAIT = process.argv.includes("--wait");
+const METHOD = arg("--method") === "explicit" ? "explicit" : "update";
+const LIMIT = Number(arg("--limit")) || Infinity;
+const PARALLEL = METHOD === "explicit" ? 5 : 1;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const FAILED_FILE = "cloudinary-move-failed.json";
 let resetAt = null; // when Cloudinary's hourly allowance resets (from API responses)
@@ -86,42 +93,63 @@ async function main() {
   console.log(`${all.length - wrong.length} already in the right folder, ${todo.length} to move from Home:`);
   for (const [k, n] of Object.entries(byFolder)) console.log(`  ${n}  ${k}`);
   if (!APPLY || !todo.length) return;
+  if (LIMIT < todo.length) todo.length = LIMIT;
+  const total = todo.length;
+  console.log(`\nMoving ${total} with ${METHOD === "explicit" ? "the Upload API (explicit), 5 at a time" : "the Admin API (update)"}.`);
 
-  // 2. move (one API call per image)
-  let moved = 0, failed = 0, stopped = false;
+  const moveOne = (r) => {
+    const opts = { resource_type: "image", type: "upload", asset_folder: folderFor(r.public_id) };
+    return METHOD === "explicit" ? cloudinary.uploader.explicit(r.public_id, opts) : cloudinary.api.update(r.public_id, opts);
+  };
+
+  // 2. move
+  let moved = 0, failed = 0, stopped = false, waiting = null;
   const failures = [];
-  for (let i = 0; i < todo.length && !stopped; i++) {
-    const r = todo[i];
-    try {
-      noteLimit(await cloudinary.api.update(r.public_id, { resource_type: "image", type: "upload", asset_folder: folderFor(r.public_id) }));
-      moved++;
-      if (moved % 100 === 0) console.log(`  ${new Date().toLocaleTimeString()}  moved ${moved} / ${todo.length}`);
-    } catch (e) {
-      if (isRateLimit(e)) {
-        if (!WAIT) {
-          console.log(`\nCloudinary's hourly API limit reached after ${moved}. Run the same command again later to continue.`);
-          stopped = true;
-        } else {
-          // wait until the allowance resets (plus a minute), or 10 minutes if unknown
-          const ms = resetAt && resetAt > new Date() ? resetAt - new Date() + 60 * 1000 : 10 * 60 * 1000;
-          console.log(`  ${new Date().toLocaleTimeString()}  hourly limit reached (${moved} moved so far); waiting ${Math.round(ms / 60000)} min`);
-          await sleep(ms);
-          resetAt = null;
-          i--; // try the same image again
+  const queue = todo.slice();
+  const worker = async () => {
+    while (queue.length && !stopped) {
+      if (waiting) await waiting;
+      const r = queue.shift();
+      if (!r) break;
+      try {
+        const res = await moveOne(r);
+        noteLimit(res);
+        if (METHOD === "explicit" && res && res.asset_folder != null && res.asset_folder !== folderFor(r.public_id)) {
+          throw new Error(`still in "${res.asset_folder || "Home"}": explicit did not move it, use the default method`);
         }
-        continue;
+        moved++;
+        if (moved % 100 === 0) console.log(`  ${new Date().toLocaleTimeString()}  moved ${moved} / ${total}`);
+      } catch (e) {
+        if (isRateLimit(e)) {
+          queue.unshift(r); // try this image again
+          if (!WAIT) {
+            if (!stopped) console.log(`\nCloudinary's hourly API limit reached after ${moved}. Run the same command again later to continue.`);
+            stopped = true;
+          } else if (!waiting) {
+            // wait until the allowance resets (plus a minute), or 10 minutes if unknown
+            const ms = resetAt && resetAt > new Date() ? resetAt - new Date() + 60 * 1000 : 10 * 60 * 1000;
+            console.log(`  ${new Date().toLocaleTimeString()}  hourly limit reached (${moved} moved so far); waiting ${Math.round(ms / 60000)} min`);
+            waiting = sleep(ms).then(() => {
+              waiting = null;
+              resetAt = null;
+            });
+          }
+          continue;
+        }
+        failed++;
+        const msg = e.message || (e.error && e.error.message);
+        failures.push({ public_id: r.public_id, folder: folderFor(r.public_id), error: msg });
+        console.log(`  ${r.public_id}: ${msg}`);
       }
-      failed++;
-      const msg = e.message || (e.error && e.error.message);
-      failures.push({ public_id: r.public_id, folder: folderFor(r.public_id), error: msg });
-      console.log(`  ${r.public_id}: ${msg}`);
     }
-  }
+  };
+  await Promise.all(Array.from({ length: PARALLEL }, worker));
+
   if (failures.length) {
     require("fs").writeFileSync(FAILED_FILE, JSON.stringify(failures, null, 2));
     console.log(`Failed images written to ${FAILED_FILE}; running the command again retries them.`);
   }
-  console.log(`\nMoved ${moved}, errors ${failed}, left ${todo.length - moved - failed}.`);
+  console.log(`\nMoved ${moved} of ${total}, errors ${failed}. Run the dry run again to see what is left.`);
 }
 
 main().catch((e) => {
